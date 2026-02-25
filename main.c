@@ -2,8 +2,6 @@
 
 #include "app_main.h"
 
-uint8_t DOOM_ARRAY[6000];
-
 int main(void)
 {
     // 初始化硬體

@@ -1,0 +1,94 @@
+#!/bin/bash
+
+# 定義顏色
+GREEN='\033[0;32m'
+YELLOW='\033[1;33m'
+RED='\033[0;31m'
+NC='\033[0m' # No Color
+
+echo -e "${YELLOW}🚧 Sentinel Guard: Starting pre-commit checks...${NC}"
+
+# ==========================================
+# 第一關：自動排版 (Code Formatting)
+# ==========================================
+echo -e "${YELLOW}👉 [Stage 1] Checking code formatting...${NC}"
+
+# 找出目前「暫存區 (Staged)」裡所有的 C/C++ 檔案
+FILES=$(git diff --cached --name-only --diff-filter=ACM | grep -E '\.(c|h|cpp|hpp)$')
+
+if [ -n "$FILES" ]; then
+    for FILE in $FILES; do
+        # 讀取 .clang-format 設定並原地修改
+        clang-format -i -style=file "$FILE"
+        # 重要！因為檔案被修改了，必須重新 git add 一次
+        git add "$FILE"
+        echo -e "${GREEN}   ✅ Auto-formatted: $FILE${NC}"
+    done
+else
+    echo "   ℹ️ No C/C++ files to format."
+fi
+
+# ==========================================
+# 第二關：靜態分析 (Static Analysis)
+# ==========================================
+echo -e "${YELLOW}👉 [Stage 2] Running Cppcheck (MISRA C Level 1)...${NC}"
+
+# 這裡使用我們 Day 5 學到的指令
+# --error-exitcode=1 代表如果有錯，回傳失敗代碼，攔截 Commit
+cppcheck --enable=warning,performance,portability \
+    --suppress=missingIncludeSystem \
+    --suppress=unusedFunction \
+    -I src/app -I src/hal \
+    --error-exitcode=1 src/
+
+# 檢查上一個指令 (cppcheck) 的結果
+if [ $? -ne 0 ]; then
+    echo -e "${RED}❌ Cppcheck Failed! Logic errors detected.${NC}"
+    echo -e "${RED}💡 Fix the errors above before committing.${NC}"
+    exit 1 # 終止 Commit
+fi
+
+echo -e "${GREEN}   ✅ Static Analysis Passed.${NC}"
+
+# ==========================================
+# 第三關：單元測試 (Unit Tests)
+# ==========================================
+echo -e "${YELLOW}👉 [Stage 3] Running Host Unit Tests...${NC}"
+
+# 執行我們的測試腳本
+./build.sh -t --clean > /dev/null 2>&1
+
+if [ $? -ne 0 ]; then
+    echo -e "${RED}❌ Unit Tests Failed! Your code broke the logic.${NC}"
+    echo -e "${RED}💡 Run './build.sh -t' to see details.${NC}"
+    # exit 1 # 終止 Commit
+fi
+
+echo -e "${GREEN}   ✅ Unit Tests Passed.${NC}"
+
+# ==========================================
+# 第四關：記憶體暴增防禦 (Memory Profiling)
+# ==========================================
+echo -e "${YELLOW}👉 [Stage 4] Running Memory Profiler (Target Build)...${NC}"
+
+# 1. 確保 ELF 檔是最新的 (執行增量編譯)
+./build.sh > /dev/null 2>&1
+if [ $? -ne 0 ]; then
+    echo -e "${RED}❌ Target Build Failed! Fix compilation errors before committing.${NC}"
+    exit 1
+fi
+
+# 2. 執行 Python 記憶體檢查腳本
+python3 tools/mem_profiler.py
+if [ $? -ne 0 ]; then
+    echo -e "${RED}❌ Memory Check Failed! RAM usage exceeded 5KB threshold.${NC}"
+    exit 1
+fi
+
+echo -e "${GREEN}   ✅ Memory Profiling Passed.${NC}"
+
+# ==========================================
+# 通過所有檢查
+# ==========================================
+echo -e "${GREEN}✨ All Systems Go. Commit Authorized. ✨${NC}"
+exit 0
