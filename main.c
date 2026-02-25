@@ -2,7 +2,7 @@
 
 #include "app_main.h"
 
-static uint8_t DOOM_ARRAY[6000];
+uint8_t DOOM_ARRAY[6000];
 
 int main(void)
 {
