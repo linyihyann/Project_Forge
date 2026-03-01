@@ -33,13 +33,7 @@ fi
 # ==========================================
 echo -e "${YELLOW}👉 [Stage 2] Running Cppcheck (MISRA C Level 1)...${NC}"
 
-# 這裡使用我們 Day 5 學到的指令
-# --error-exitcode=1 代表如果有錯，回傳失敗代碼，攔截 Commit
-cppcheck --enable=warning,performance,portability \
-    --suppress=missingIncludeSystem \
-    --suppress=unusedFunction \
-    -I src/app -I src/hal \
-    --error-exitcode=1 src/
+./tools/ci/run_cppcheck.sh -t --clean > /dev/null 2>&1
 
 # 檢查上一個指令 (cppcheck) 的結果
 if [ $? -ne 0 ]; then
@@ -55,8 +49,7 @@ echo -e "${GREEN}   ✅ Static Analysis Passed.${NC}"
 # ==========================================
 echo -e "${YELLOW}👉 [Stage 3] Running Host Unit Tests...${NC}"
 
-# 執行我們的測試腳本
-./build.sh -t --clean > /dev/null 2>&1
+ceedling gcov:all > /dev/null 2>&1
 
 if [ $? -ne 0 ]; then
     echo -e "${RED}❌ Unit Tests Failed! Your code broke the logic.${NC}"
