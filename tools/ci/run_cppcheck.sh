@@ -15,6 +15,7 @@ cppcheck --enable=all \
          --suppress=unusedFunction \
          --suppress=misra-c2012-15.5 \
          --suppress=misra-c2012-8.7 \
+         --suppress=unmatchedSuppression \
          -I src/app \
          -I src/hal/rp2350/ \
          -I src/hal/include/ \
