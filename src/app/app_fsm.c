@@ -101,3 +101,10 @@ app_fsm_status_t app_fsm_process_event(app_fsm_event_t event)
     }
     return FSM_ERR_INVALID_EVENT;
 }
+
+#ifdef TEST
+void app_fsm_test_hook_set_state(app_fsm_state_t state)
+{
+    current_state = state;
+}
+#endif

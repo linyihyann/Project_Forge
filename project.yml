@@ -5,6 +5,12 @@
   :use_auxiliary_dependencies: TRUE
   :build_root: build/test_build # 把測試編譯的垃圾檔案獨立放，不要污染 CMake 的 build
 
+:defines:
+  :test:
+    - TEST
+  :gcov:
+    - TEST
+    
 :paths:
   :test:
     - +:test/**
@@ -31,3 +37,8 @@
     - stdout_pretty_tests_report
     - module_generator
     - gcov
+
+:gcov:
+  :html_report_type: basic
+  :fail_on_coverage_meet: 
+    - 90 # 要求 Line (語句) 與 Branch (分支) 覆蓋率必須達到 100%，否則回傳 Error    

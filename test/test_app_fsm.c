@@ -124,3 +124,33 @@ void test_app_fsm_Should_DoNothing_When_InFaultState(void)
     TEST_ASSERT_EQUAL(FSM_ERR_INVALID_EVENT, res);
     TEST_ASSERT_EQUAL(FSM_STATE_FAULT, app_fsm_get_state());
 }
+
+extern void app_fsm_test_hook_set_state(app_fsm_state_t state);
+
+// TC-13: 模擬宇宙射線打到 RAM，狀態機變成未知數字 (例如 99)
+void test_app_fsm_Should_TriggerDefault_When_StateIsCorrupted(void)
+{
+    // 透過後門強制把 static 變數改成非法值
+    app_fsm_test_hook_set_state((app_fsm_state_t)99);
+
+    // 隨便發個事件，它應該要觸發 default: 降級為 FAULT，並回傳 INVALID_EVENT
+    app_fsm_status_t res = app_fsm_process_event(FSM_EVENT_TICK);
+
+    TEST_ASSERT_EQUAL(FSM_ERR_INVALID_EVENT, res);
+    TEST_ASSERT_EQUAL(FSM_STATE_FAULT, app_fsm_get_state());
+}
+// 測試在 SELF_TEST 狀態下收到一個完全不相干的事件 (例如 TICK)
+// 這會跳過所有 case，最終撞到函數末尾的 return
+void test_app_fsm_Should_ReachEndOfFunction_When_EventIsUnprocessed(void)
+{
+    // 💡 假設目前在 UNINIT 狀態
+    app_fsm_init();
+
+    // 當發送 TICK 給 UNINIT 狀態時
+    // 程式碼會直接執行到 case FSM_STATE_UNINIT 裡的 return FSM_ERR_INVALID_EVENT
+    // 根本不會執行到 hal_time_get_ms()
+    app_fsm_status_t res = app_fsm_process_event(FSM_EVENT_TICK);
+
+    TEST_ASSERT_EQUAL(FSM_ERR_INVALID_EVENT, res);
+    // 這裡不要寫 hal_time_get_ms_Expect... 因為邏輯上真的不會 call 到
+}

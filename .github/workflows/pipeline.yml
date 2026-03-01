@@ -1,0 +1,39 @@
+name: Tier-1 QA Pipeline
+
+on:
+  pull_request:
+    branches: [ main ]
+  push:
+    branches: [ main ]
+
+jobs:
+  # 任務 1：靜態掃描 (與任務 2 平行執行)
+  static-analysis:
+    name: MISRA C Static Analysis
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v3
+
+      - name: Build QA Docker Image
+        run: docker build -t tier1-qa-env -f tools/ci/Dockerfile .
+
+      - name: Run MISRA C in Docker
+        run: docker run --rm -v ${{ github.workspace }}:/project tier1-qa-env bash /project/tools/ci/run_cppcheck.sh
+
+  # 任務 2：單元測試 (TDD) 與 覆蓋率分析 (Gcov)
+  unit-tests:
+    name: TDD & Gcov Coverage
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v3
+
+      - name: Build QA Docker Image
+        # Docker 層級快取會讓這步瞬間完成
+        run: docker build -t tier1-qa-env -f tools/ci/Dockerfile .
+
+      - name: Run Tests and Coverage
+        # 💡 關鍵修改：用 && 串聯。如果 test 失敗，就不會跑 gcov；
+        # 只要有任何一個指令 Failed，CI 就會直接亮紅燈擋下 PR！
+        run: docker run --rm -v ${{ github.workspace }}:/project tier1-qa-env bash -c "cd /project && ceedling test:all && ceedling gcov:all"
