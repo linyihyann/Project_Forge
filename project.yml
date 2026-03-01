@@ -14,7 +14,6 @@
 :paths:
   :test:
     - +:test/**
-    - -:test/support
   :source:
     - src/app/** # 告訴 Ceedling 業務邏輯在這裡
   :include:
