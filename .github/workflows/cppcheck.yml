@@ -8,21 +8,17 @@ on:
 
 jobs:
   static-analysis:
-    name: Cppcheck & MISRA C
+    name: Dockerized Cppcheck & MISRA C
     runs-on: ubuntu-latest
 
     steps:
       - name: Checkout Code
         uses: actions/checkout@v3
 
-      - name: Install Cppcheck
-        run: |
-          sudo apt-get update
-          sudo apt-get install -y cppcheck python3
+      - name: Build QA Docker Image
+        # 雲端也使用同一個 Dockerfile 建立環境
+        run: docker build -t tier1-qa-cppcheck -f tools/ci/Dockerfile .
 
-      - name: Make Script Executable
-        run: chmod +x tools/ci/run_cppcheck.sh
-
-      - name: Run MISRA C Scan
-        # 這裡會呼叫我們寫好的嚴格版檢查腳本
-        run: ./tools/ci/run_cppcheck.sh
+      - name: Run MISRA C in Docker
+        # 雲端也透過 docker run 來執行腳本，保證與本機 100% 行為一致
+        run: docker run --rm -v ${{ github.workspace }}:/project tier1-qa-cppcheck bash /project/tools/ci/run_cppcheck.sh
