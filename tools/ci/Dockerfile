@@ -1,6 +1,8 @@
 # 專門用於 MISRA C 靜態分析與 單元測試(TDD) 的全能 QA 無塵室
 FROM ubuntu:22.04
 
+ENV LANG=C.UTF-8
+ENV LC_ALL=C.UTF-8
 ENV DEBIAN_FRONTEND=noninteractive
 
 # 安裝 QA 必備工具：
