@@ -10,7 +10,7 @@
     - TEST
   :gcov:
     - TEST
-    
+
 :paths:
   :test:
     - +:test/**
@@ -31,8 +31,6 @@
     - :expect_any_args
 
 :plugins:
-  :load_paths:
-    - "#{Ceedling.load_path}"
   :enabled:
     - stdout_pretty_tests_report
     - module_generator
