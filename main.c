@@ -12,6 +12,5 @@ int main(void)
     {
         app_main_task();
     }
-
     return 0;
 }

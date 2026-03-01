@@ -1,0 +1,28 @@
+name: Strict MISRA C Pipeline
+
+on:
+  pull_request:
+    branches: [ main ]
+  push:
+    branches: [ main ]
+
+jobs:
+  static-analysis:
+    name: Cppcheck & MISRA C
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v3
+
+      - name: Install Cppcheck
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y cppcheck python3
+
+      - name: Make Script Executable
+        run: chmod +x tools/ci/run_cppcheck.sh
+
+      - name: Run MISRA C Scan
+        # 這裡會呼叫我們寫好的嚴格版檢查腳本
+        run: ./tools/ci/run_cppcheck.sh
