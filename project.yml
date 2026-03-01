@@ -1,0 +1,33 @@
+# project.yml 內容節錄
+:project:
+  :use_exceptions: FALSE
+  :use_test_preprocessor: TRUE
+  :use_auxiliary_dependencies: TRUE
+  :build_root: build/test_build # 把測試編譯的垃圾檔案獨立放，不要污染 CMake 的 build
+
+:paths:
+  :test:
+    - +:test/**
+    - -:test/support
+  :source:
+    - src/app/** # 告訴 Ceedling 業務邏輯在這裡
+  :include:
+    - src/hal/include/** # 告訴 Ceedling HAL 的「介面」在這裡 (絕對不要 include rp2350 資料夾)
+
+:cmock:
+  :mock_prefix: mock_
+  :when_no_prototypes: :warn
+  :enforce_strict_ordering: TRUE
+  :plugins:
+    - :ignore
+    - :callback
+    - :ignore_arg
+    - :expect_any_args
+
+:plugins:
+  :load_paths:
+    - "#{Ceedling.load_path}"
+  :enabled:
+    - stdout_pretty_tests_report
+    - module_generator
+    - gcov
