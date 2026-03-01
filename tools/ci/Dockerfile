@@ -10,7 +10,7 @@ RUN apt-get update && \
     apt-get install -y --no-install-recommends \
     cppcheck python3 \
     ruby gcc make libc6-dev && \
-    RUN gem install ceedling -v 0.31.1 && \
+    RUN gem install ceedling && \
     rm -rf /var/lib/apt/lists/*
 
 WORKDIR /project
