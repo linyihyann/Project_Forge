@@ -103,6 +103,9 @@ app_fsm_status_t app_fsm_process_event(app_fsm_event_t event)
 }
 
 #ifdef TEST
+/* 💡 修正 MISRA Rule 8.4：在定義前先提供宣告 */
+void app_fsm_test_hook_set_state(app_fsm_state_t state);
+
 void app_fsm_test_hook_set_state(app_fsm_state_t state)
 {
     current_state = state;
