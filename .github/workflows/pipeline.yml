@@ -36,4 +36,4 @@ jobs:
       - name: Run Tests and Coverage
         # 💡 關鍵修改：用 && 串聯。如果 test 失敗，就不會跑 gcov；
         # 只要有任何一個指令 Failed，CI 就會直接亮紅燈擋下 PR！
-        run: docker run --rm -v ${{ github.workspace }}:/project tier1-qa-env bash -c "cd /project && ceedling test:all && ceedling gcov:all"
+        run: docker run --rm -e LANG=C.UTF-8 -e LC_ALL=C.UTF-8 -v ${{ github.workspace }}:/project tier1-qa-env bash -c "cd /project && ceedling test:all && ceedling gcov:all"

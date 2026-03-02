@@ -5,7 +5,6 @@ BUILD_TYPE="Debug"
 TARGET="firmware" 
 DO_CLEAN=0        
 
-# 🌟 強制升版到 v2，徹底斷開與舊版 v1 的糾纏！
 IMAGE_NAME="project_forge_env:v2"
 USER_ID=$(id -u)
 GROUP_ID=$(id -g)
@@ -27,21 +26,23 @@ if [ $DO_CLEAN -eq 1 ]; then
 fi
 
 if [ "$TARGET" == "test" ]; then
-    echo "🧪 [Docker] Building and Running Unit Tests..."
-    docker run --rm -v "$(pwd)":/workspace -w /workspace -e PICO_SDK_PATH=/opt/pico-sdk ${IMAGE_NAME} bash -c "
-        mkdir -p build_test && cd build_test && \
-        cmake -G Ninja -DCMAKE_BUILD_TYPE=${BUILD_TYPE} ../test && \
-        ninja && \
-        ./run_tests && \
-        cd .. && chown -R ${USER_ID}:${GROUP_ID} build_test
+    echo "🛡️ [Docker] Running Full QA Pipeline (Static Analysis + Unit Tests)..."
+    
+    # 💡 在同一個容器裡，先跑靜態分析，再跑單元測試
+    docker run --rm -v "$(pwd)":/project -w /project tier1-qa-env bash -c "
+        echo '🔍 [1/2] Running MISRA C Static Analysis...' && \
+        cppcheck --enable=warning --error-exitcode=1 src/ && \
+        echo '🧪 [2/2] Running Unit Tests via Ceedling...' && \
+        ceedling test:all && \
+        chown -R ${USER_ID}:${GROUP_ID} build/test_build
     "
 else
     echo "🔨 [Docker] Building Firmware for RP2350..."
+    # 👇 這裡維持用原本的 project_forge_env:v2 來編譯硬體
     docker run --rm -v "$(pwd)":/workspace -w /workspace -e PICO_SDK_PATH=/opt/pico-sdk ${IMAGE_NAME} bash -c "
         mkdir -p build && cd build && \
         cmake -G Ninja -DCMAKE_BUILD_TYPE=${BUILD_TYPE} .. && \
         ninja && \
         cd .. && chown -R ${USER_ID}:${GROUP_ID} build
     "
-    echo "✅ Firmware built successfully via Docker!"
 fi
