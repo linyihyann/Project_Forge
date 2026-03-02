@@ -14,9 +14,10 @@ Currently targeted for the **Raspberry Pi Pico 2 W (RP2350 / ARM Cortex-M33)**, 
 * **Non-blocking Super Loop:** Eradicated all `delay()` functions. Driven by a 100Hz periodic tick, liberating CPU cycles and preventing starvation of the wireless coprocessor (CYW43).
 * **Fail-safe Mechanisms:** The FSM includes a strict 500ms timeout during the `SELF_TEST` state. Any hardware initialization failure or timeout immediately forces the system into a safe `FAULT` state.
 
-### 3. Immortal Build Infrastructure & CI Guardrails
-* **Bit-for-bit Reproducibility:** Uses a Multi-stage Docker clean room, `-fmacro-prefix-map`, and `SOURCE_DATE_EPOCH` to ensure identical binary hashes regardless of the host machine.
-* **Shift-Left Pre-commit Hooks:** Custom Python scripts parse ELF `.bss` and `.data` sections locally. Commits are automatically rejected if RAM usage spikes `> 5KB`, preventing memory leaks at the source.
+### 3. Immortal Build Infrastructure & Shift-Left QA Pipeline
+* **Dual-Docker Architecture:** Separated hardware cross-compilation (`project_forge_env`) and host-based QA processes (`tier1-qa-env`) into dedicated containers, preventing environment drift and minimizing CI execution time.
+* **Shift-Left Testing:** Implemented a unified `./build.sh -t` entry point and Git Pre-commit hooks to enforce MISRA C static analysis (Cppcheck) and Unit Tests (Ceedling) locally before any commit.
+* **Bit-for-bit Reproducible:** Utilizes Multi-stage Docker builds setting deterministic epochs, guaranteeing exact firmware reproduction across any OS over the next decade.
 
 ---
 
@@ -32,10 +33,10 @@ Currently targeted for the **Raspberry Pi Pico 2 W (RP2350 / ARM Cortex-M33)**, 
 - **非阻塞超級迴圈 (Non-blocking)**：全面拔除阻塞式的 `delay()`，利用時間戳與 100Hz Tick 驅動狀態機，完美解決即時性 (Real-time) 瓶頸。
 - **故障注入與安全降級**：實作 `SELF_TEST` 500ms 超時斷電防護，並具備底層硬體損壞的異常捕捉與 `FAULT` 狀態降級機制，符合防禦性編程 (Defensive Programming) 精神。
 
-### 3. 零誤差建置基礎設施 (Immortal Build)
-- **100% 跨平台無塵室**：採用 Multi-stage Docker 封裝 ARM Toolchain，保障未來 10 年內皆可 100% 重現當年的出廠韌體。
-- **記憶體暴增防禦網**：自研 Git Pre-commit Hook (`mem_profiler.py`)，於開發者本地端攔截巨型靜態陣列與 Memory Leak 隱患。
-- **現代化 CMake 裝配**：採用 `target_sources` 扁平化管理，避開 ARM Cortex-M33 靜態庫打包常見的危險跳躍 (Dangerous Relocation) 異常。
+### 3. 左移測試與零誤差建置基礎設施 (Shift-Left QA Pipeline)
+- **雙軌無塵室架構 (Dual-Docker)**：將 ARM Cortex-M33 交叉編譯與主機端 QA 測試徹底分離。使用獨立的 `tier1-qa-env` 執行 Ruby (Ceedling) 與 Cppcheck，杜絕環境污染並極大化 CI 效能。
+- **左移測試 (Shift-Left Testing)**：透過 `build.sh -t` 一鍵觸發 MISRA C 靜態分析與單元測試。結合 Git Pre-commit Hook，在本地端強制執行排版與邏輯驗證，達成快速失敗 (Fail-Fast)。
+- **100% 跨平台重現**：採用 Multi-stage Docker 封裝 Toolchain，保障未來 10 年內皆可 100% 重現當年的出廠韌體。
 
 ## 📂 專案目錄結構 (Architecture Tree)
 ```text
