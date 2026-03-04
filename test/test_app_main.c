@@ -4,11 +4,20 @@
 // 💡 讓 Ceedling 自動生成 HAL 與 FSM 的替身 (Mocks)
 #include "mock_app_fsm.h"
 #include "mock_hal_dio.h"
-#include "mock_hal_time.h"
-// 🌟 加上這行：告訴 CMock 幫我們產生 UART DMA 的假函數
 #include "mock_hal_dma.h"
+#include "mock_hal_time.h"
+#include "mock_ring_buffer.h"
 
-void setUp(void) {}
+void setUp(void)
+{
+    // 🌟 告訴替身：當 App Main 呼叫這些函數時，假裝有做事就好
+    rb_init_Ignore();
+    hal_time_start_10khz_producer_Ignore();
+
+    // 🌟 告訴替身：當 App Main 嘗試 Dequeue 時，永遠回傳空載 (RB_EMPTY)
+    rb_dequeue_IgnoreAndReturn(RB_EMPTY);
+}
+
 void tearDown(void) {}
 
 // 測試系統初始化順序

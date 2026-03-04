@@ -43,7 +43,6 @@ void app_main_task(void)
     {
         (void)app_fsm_process_event(FSM_EVENT_TICK);
 
-        // 🌟 補上這段心跳包：每 10 次 100ms (即 1 秒) 印出一次存活證明
         static uint8_t sec_count = 0;
         sec_count++;
         if (sec_count >= 10U)
@@ -55,31 +54,23 @@ void app_main_task(void)
         last_tick = now;
     }
 
-    // ==========================================
-    // 🛡️ 壓測專用：Consumer 驗證邏輯
-    // ==========================================
     static uint8_t expected_val = 0;
     static bool first_read = true;
     uint8_t rx_data;
 
-    // while 迴圈：只要裡面有資料，就全速抽乾它
     while (rb_dequeue(&g_test_rb, &rx_data) == RB_OK)
     {
         if (first_read)
         {
-            expected_val = rx_data;  // 第一次先對齊基準點
+            expected_val = rx_data;
             first_read = false;
         }
 
-        // 致命防禦檢查：數字如果不連續，代表 Lock-free 失敗或爆滿了！
         if (rx_data != expected_val)
         {
             (void)printf("\n[FATAL] Data Corruption! Expected %d, got %d\n", expected_val, rx_data);
-
-            // 將板子上的 LED 長亮表示錯誤
             (void)hal_dio_write(HAL_DIO_LED_HEARTBEAT, true);
-
-            expected_val = rx_data;  // 重新對齊，繼續觀察
+            expected_val = rx_data;
         }
 
         expected_val++;
