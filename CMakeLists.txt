@@ -27,6 +27,7 @@ add_executable(firmware main.c)
 
 # 2. 🌟 呼叫子資料夾 (它們會把代碼直接掛載給 firmware)
 add_subdirectory(src/app)
+add_subdirectory(src/utils) # 🆕 掛載純邏輯基礎設施
 add_subdirectory(src/hal/rp2350)
 
 # 3. 🌟 廠長統一配發引擎與底層 (只在這裡呼叫一次 SDK)
@@ -35,5 +36,8 @@ target_link_libraries(firmware PRIVATE
     pico_cyw43_arch_none 
     pico_stdlib
 )
+
+pico_enable_stdio_usb(firmware 1)
+pico_enable_stdio_uart(firmware 0)
 
 pico_add_extra_outputs(firmware)

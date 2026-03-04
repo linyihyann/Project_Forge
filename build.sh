@@ -28,10 +28,16 @@ fi
 if [ "$TARGET" == "test" ]; then
     echo "🛡️ [Docker] Running Full QA Pipeline (Static Analysis + Unit Tests)..."
     
-    # 💡 在同一個容器裡，先跑靜態分析，再跑單元測試
+    # 💡 升級為 Tier-1 零容忍靜態分析防禦
     docker run --rm -v "$(pwd)":/project -w /project tier1-qa-env bash -c "
-        echo '🔍 [1/2] Running MISRA C Static Analysis...' && \
-        cppcheck --enable=warning --error-exitcode=1 src/ && \
+        echo '🔍 [1/2] Running Strict MISRA C Static Analysis...' && \
+        cppcheck --enable=all --inline-suppr --suppress=unusedFunction --suppress=unmatchedSuppression --suppress=missingInclude src/ main.c 2> cppcheck.log; \
+        cat cppcheck.log; \
+        if grep -qE 'style:|warning:|error:' cppcheck.log; then \
+            echo '❌ [CI Blocked] MISRA C or Style violations detected! Fix them before committing.'; \
+            exit 1; \
+        fi && \
+        echo '✅ Static Analysis Passed!' && \
         echo '🧪 [2/2] Running Unit Tests via Ceedling...' && \
         ceedling test:all && \
         chown -R ${USER_ID}:${GROUP_ID} build/test_build
