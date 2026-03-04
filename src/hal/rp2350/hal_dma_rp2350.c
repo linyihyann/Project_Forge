@@ -123,42 +123,38 @@ hal_uart_status_t hal_uart_dma_init(uint32_t baudrate)
     gpio_set_function(UART_TX_PIN, GPIO_FUNC_UART);
     gpio_set_function(UART_RX_PIN, GPIO_FUNC_UART);
 
-    // 設定 8N1 格式
     uart_set_format(UART_ID, 8, 1, UART_PARITY_NONE);
-    // 開啟硬體 FIFO (PL011 必須開 FIFO 才能正確觸發 Timeout 中斷)
     uart_set_fifo_enabled(UART_ID, true);
 
-    // 2. 精準配置 UART 中斷 (這是面試必考的雷區)
-    // ⚠️ 絕不使用 pico-sdk 的 uart_set_irq_enables()，因為它會無差別打開 RX 中斷
-    // 我們只打開 Timeout(RTIM) 和 硬體錯誤(OEIM, BEIM, PEIM, FEIM) 中斷
+    // ==========================================
+    // 🌟 修正點：先申請並設定好 DMA 資源！
+    // ==========================================
+    dma_rx_chan = dma_claim_unused_channel(true);
+    if (dma_rx_chan < 0)
+    {
+        return HAL_UART_ERR_INIT_FAIL;
+    }
+
+    dma_channel_config c = dma_channel_get_default_config(dma_rx_chan);
+    channel_config_set_transfer_data_size(&c, DMA_SIZE_8);
+    channel_config_set_read_increment(&c, false);
+    channel_config_set_write_increment(&c, true);
+    channel_config_set_dreq(&c, uart_get_dreq(UART_ID, false));
+
+    dma_channel_configure(dma_rx_chan, &c, current_dma_buf, &uart_get_hw(UART_ID)->dr,
+                          RX_BUFFER_SIZE,
+                          false  // false = 不立刻啟動
+    );
+
+    // ==========================================
+    // 🌟 最後一步：武器都上膛了，才解開保險 (開啟中斷)
+    // ==========================================
     uart_hw_t* hw = uart_get_hw(UART_ID);
     hw->imsc = (UART_UARTIMSC_RTIM_BITS | UART_UARTIMSC_OEIM_BITS | UART_UARTIMSC_BEIM_BITS |
                 UART_UARTIMSC_PEIM_BITS | UART_UARTIMSC_FEIM_BITS);
 
-    // 註冊我們剛寫好的硬派 ISR 到 NVIC (巢狀向量中斷控制器)
     irq_set_exclusive_handler(UART_IRQ, uart_rx_isr);
-    irq_set_enabled(UART_IRQ, true);
-
-    // 3. 配置 DMA Channel
-    dma_rx_chan = dma_claim_unused_channel(true);
-    if (dma_rx_chan < 0)
-    {
-        return HAL_UART_ERR_INIT_FAIL;  // 防禦：拿不到 DMA 通道就報錯
-    }
-
-    dma_channel_config c = dma_channel_get_default_config(dma_rx_chan);
-    channel_config_set_transfer_data_size(&c, DMA_SIZE_8);  // 每次搬運 1 Byte
-    channel_config_set_read_increment(&c, false);           // 來源：永遠是 UART DR 暫存器，不遞增
-    channel_config_set_write_increment(&c, true);           // 目的：寫入我們的 RAM Buffer，要遞增
-    channel_config_set_dreq(&c, uart_get_dreq(UART_ID, false));  // 觸發源：UART RX
-
-    // 綁定 DMA 到暫存器，但先不啟動 (Start)
-    dma_channel_configure(dma_rx_chan, &c,
-                          current_dma_buf,            // 初始寫入位址
-                          &uart_get_hw(UART_ID)->dr,  // 來源位址 (UART Data Register)
-                          RX_BUFFER_SIZE,             // 傳輸總量
-                          false                       // false = 不立刻啟動
-    );
+    irq_set_enabled(UART_IRQ, true);  // 🛡️ 防禦成功：此時若有雜訊觸發，dma_rx_chan 已是合法數值
 
     return HAL_UART_OK;
 }
