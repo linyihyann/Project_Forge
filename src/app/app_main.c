@@ -1,5 +1,6 @@
 #include "app_main.h"
 
+// cppcheck-suppress misra-c2012-21.6
 #include <stdio.h>  // 給 printf 報錯用
 
 #include "app_fsm.h"
@@ -59,6 +60,7 @@ void app_main_task(void)
         sec_count++;
         if (sec_count >= 10U)
         {
+            // cppcheck-suppress misra-c2012-17.7
             printf("[System] Alive! 10kHz Stress Test is running...\n");
             sec_count = 0;
         }
