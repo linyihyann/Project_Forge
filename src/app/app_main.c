@@ -57,7 +57,7 @@ void app_main_task(void)
         // 🌟 補上這段心跳包：每 10 次 100ms (即 1 秒) 印出一次存活證明
         static uint8_t sec_count = 0;
         sec_count++;
-        if (sec_count >= 10)
+        if (sec_count >= 10U)
         {
             printf("[System] Alive! 10kHz Stress Test is running...\n");
             sec_count = 0;
@@ -90,7 +90,7 @@ void app_main_task(void)
             printf("\n[FATAL] Data Corruption! Expected %d, got %d\n", expected_val, rx_data);
 
             // 將板子上的 LED 長亮表示錯誤
-            hal_dio_write(HAL_DIO_LED_HEARTBEAT, true);
+            (void)hal_dio_write(HAL_DIO_LED_HEARTBEAT, true);
 
             expected_val = rx_data;  // 重新對齊，繼續觀察
         }

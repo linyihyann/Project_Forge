@@ -19,6 +19,7 @@ cppcheck --enable=all \
          -I src/app \
          -I src/hal/rp2350/ \
          -I src/hal/include/ \
+         -I src/utils/ \
          -I test \
          src/app
 

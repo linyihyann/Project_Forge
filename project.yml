@@ -15,9 +15,11 @@
   :test:
     - +:test/**
   :source:
-    - src/app/** # 告訴 Ceedling 業務邏輯在這裡
+    - src/app/**
+    - src/hal/**
+    - src/utils/** # 剛加上的
   :include:
-    - src/hal/include/** # 告訴 Ceedling HAL 的「介面」在這裡 (絕對不要 include rp2350 資料夾)
+    - src/hal/include/** # 確保這行還在！這是 Ceedling 找 HAL 介面的依據
 
 :cmock:
   :mock_prefix: mock_
