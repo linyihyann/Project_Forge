@@ -2,6 +2,7 @@
 target_sources(firmware PRIVATE 
     ${CMAKE_CURRENT_SOURCE_DIR}/hal_dio_rp2350.c 
     ${CMAKE_CURRENT_SOURCE_DIR}/hal_time_rp2350.c
+    ${CMAKE_CURRENT_SOURCE_DIR}/hal_dma_rp2350.c
 )
 
 # 🌟 設定翻譯官需要的標頭檔路徑

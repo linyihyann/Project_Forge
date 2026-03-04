@@ -33,7 +33,7 @@ fi
 # ==========================================
 echo -e "${YELLOW}👉 [Stage 2] Running Cppcheck (MISRA C Level 1)...${NC}"
 
-./tools/ci/run_cppcheck.sh -t --clean > /dev/null 2>&1
+./tools/ci/run_cppcheck.sh
 
 # 檢查上一個指令 (cppcheck) 的結果
 if [ $? -ne 0 ]; then
@@ -49,7 +49,7 @@ echo -e "${GREEN}   ✅ Static Analysis Passed.${NC}"
 # ==========================================
 echo -e "${YELLOW}👉 [Stage 3] Running Host Unit Tests...${NC}"
 
-ceedling gcov:all > /dev/null 2>&1
+ceedling gcov:all
 
 if [ $? -ne 0 ]; then
     echo -e "${RED}❌ Unit Tests Failed! Your code broke the logic.${NC}"
