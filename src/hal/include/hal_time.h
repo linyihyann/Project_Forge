@@ -4,8 +4,6 @@
 
 // 取得系統當前毫秒數 (供 App 層 FSM 計算 Timeout 使用)
 uint32_t hal_time_get_ms(void);
-
-// 🚨 已經將 hal_time_delay_ms() 從對外介面拔除。
-// App 層不應該也不能呼叫 Blocking Delay。
+void hal_time_start_10khz_producer(void* rb_ptr);
 
 #endif  // HAL_TIME_H

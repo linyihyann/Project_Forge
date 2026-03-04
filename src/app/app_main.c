@@ -10,8 +10,6 @@
 #include "ring_buffer.h"  // 引入資料結構
 
 static uint32_t last_tick = 0U;
-
-// 🌟 宣告我們的主角：Ring Buffer
 static ring_buffer_t g_test_rb;
 
 void app_main_init(void)
