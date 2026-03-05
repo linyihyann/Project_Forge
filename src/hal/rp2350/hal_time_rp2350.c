@@ -14,6 +14,11 @@ uint32_t hal_time_get_ms(void)
     return to_ms_since_boot(get_absolute_time());
 }
 
+uint32_t hal_time_get_us(void)
+{
+    // 調用 Pico SDK 底層 API，回傳開機以來的絕對微秒數
+    return time_us_32();
+}
 // ==========================================
 // 🚨 壓測專用：10kHz 硬體中斷 (Producer)
 // ==========================================

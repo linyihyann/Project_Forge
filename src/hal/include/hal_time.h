@@ -2,8 +2,8 @@
 #define HAL_TIME_H
 #include <stdint.h>
 
-// 取得系統當前毫秒數 (供 App 層 FSM 計算 Timeout 使用)
 uint32_t hal_time_get_ms(void);
+uint32_t hal_time_get_us(void);  // 👈 確保這行有加上去並存檔！
 void hal_time_start_10khz_producer(void* rb_ptr);
 
 #endif  // HAL_TIME_H

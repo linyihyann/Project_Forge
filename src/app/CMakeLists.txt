@@ -2,6 +2,7 @@
 target_sources(firmware PRIVATE 
     ${CMAKE_CURRENT_SOURCE_DIR}/app_main.c 
     ${CMAKE_CURRENT_SOURCE_DIR}/app_fsm.c  # 🚨 確保加上絕對路徑變數
+    ${CMAKE_CURRENT_SOURCE_DIR}/app_crash_dump.c
 )
 
 # 🌟 設定大腦需要的標頭檔路徑

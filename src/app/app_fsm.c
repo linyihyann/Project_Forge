@@ -24,8 +24,6 @@ app_fsm_state_t app_fsm_get_state(void)
 
 app_fsm_status_t app_fsm_process_event(app_fsm_event_t event)
 {
-    // 🌟 移除這裡的全域獲取，改在需要的 Case 裡面精準獲取
-
     switch (current_state)
     {
         case FSM_STATE_UNINIT:
@@ -47,7 +45,6 @@ app_fsm_status_t app_fsm_process_event(app_fsm_event_t event)
         case FSM_STATE_SELF_TEST:
             if (event == FSM_EVENT_TICK)
             {
-                // 只在 TICK 事件發生時才去取時間
                 uint32_t current_time = hal_time_get_ms();
                 uint32_t elapsed_time = current_time - state_start_time;
 
@@ -60,7 +57,7 @@ app_fsm_status_t app_fsm_process_event(app_fsm_event_t event)
                 else if (elapsed_time >= FSM_SELF_TEST_DURATION_MS)
                 {
                     current_state = FSM_STATE_RUNNING;
-                    state_start_time = current_time;
+                    state_start_time = current_time;  // 重置時間給下一個狀態用
                     return FSM_OK;
                 }
                 else

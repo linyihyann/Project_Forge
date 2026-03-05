@@ -12,29 +12,41 @@
 * **Safe Initialization Sequence:** Permanently eliminated boot-time HardFaults caused by transient noise by establishing a strict "Resource Claiming before IRQ Enable" sequence.
 * **Software Idle Polling:** Bypassed the ARM PL011 hardware RX FIFO timeout limitations by introducing a 100Hz Super Loop "Idle Polling" mechanism, dropping UART CPU utilization from 60% to `< 5%`.
 
-### 3. Lock-Free Data Structures & 10kHz Concurrency Validation (New)
-* **Lock-Free Ring Buffer:** Implemented a single-producer, single-consumer ring buffer using ARM `__dmb()` (Data Memory Barrier) to prevent data corruption without blocking system Mutexes.
-* **10kHz Preemption Validation:** Passed a rigorous 10,000Hz (100μs) hardware timer interrupt stress test on the RP2350 physical board, proving zero data drops, zero overwrites, and graceful backpressure handling.
-* **Boot Starvation Defense:** Implemented a strict `stdio_usb_connected()` barrier to prevent TinyUSB CDC background task starvation during extreme high-frequency IRQ bursts.
+### 3. Lock-Free Data Structures & 10kHz Concurrency Validation
+* **Lock-Free Ring Buffer:** Implemented a single-producer, single-consumer ring buffer using ARM `__dmb()` (Data Memory Barrier) to prevent data corruption without blocking system IRQs.
+* **USB CDC Enumeration Barrier:** Implemented `stdio_usb_connected()` barrier, completely resolving USB CDC driver starvation and enumeration failure blind spots caused by RP2350 booting too fast and interrupt storms.
+* **Docker-based Extreme Validation:** Integrated Docker + Ceedling (Unity/CMock) toolchain, seamlessly integrating static analysis and unit testing into the CI Pipeline.
+
+### 4. System Observability & Post-mortem Debugging (Day 8)
+* **Zero-Overhead Crash Dump:** Implemented a Tier-1 post-mortem debugging mechanism utilizing the `.uninitialized_data` RAM section (136 Bytes). It guarantees the survival of microsecond-level timestamps and fatal log strings across Watchdog timeouts and Warm Resets without flash wear-out.
+* **Deterministic Fault Injection:** Engineered a macro-driven fault injection framework synchronized with a 2000ms Watchdog Timer to mathematically guarantee deterministic system recovery and crash evidence preservation.
+* **MISRA C:2012 Compliant Observer Pattern:** Decoupled system events using a static Observer Pattern array (No `malloc`). Verified via TDD boundary tests to mathematically prove immunity to buffer overflows. Resolved Rules 7.2, 10.4, and 17.7 with proper static analysis suppression handling.
 
 ---
 
-## 🌟 核心軟體架構與亮點 (繁體中文版)
+## 🌟 核心特色 (繁體中文)
 
-這是一個以 **Clean Architecture (乾淨架構)** 為核心設計的車規級嵌入式專案。具備 100% 跨平台移植能力、絕對可重製編譯環境 (Bit-for-bit Reproducibility) 與測試左移防禦工事 (Shift-Left Guardrails)。
+### 1. 測試驅動開發 (TDD) 與 100% 程式碼覆蓋率
+* **Host 端測試極速回饋：** 透過 **Ceedling** 構建系統，在 macOS/Linux 上使用 **Unity** 與 **CMock** 執行單元測試，達成 `< 0.5s` 的極速重構回饋。
+* **嚴格硬體解耦與時序驗證：** 配置 CMock `:enforce_strict_ordering: TRUE`，嚴格驗證底層硬體 API 的呼叫順序與時序邏輯。
+* **零負擔測試掛載：** 透過 C 語言巨集 `#ifdef TEST` 隔離單元測試狀態，徹底根除測試代碼污染量產唯讀記憶體 (ROM) 的風險。
 
-### 1. 10kHz 併發壓測驗證的無鎖環形緩衝區 (Lock-Free Ring Buffer)
-- **記憶體屏障同步技術**：基於單向推進指標與 ARM Cortex-M `__dmb()` 指令，實作完全不依賴 Mutex 或關中斷 (Disable IRQ) 的 Lock-free 資料結構，極大化系統即時性 (Real-time)。
-- **10,000Hz 實體極限壓測**：在 RP2350 上以 100μs 週期觸發硬體中斷進行搶佔式寫入壓測。在模擬主迴圈背壓 (Backpressure) 的極限環境下，達成零斷號、零資料覆蓋、零死機的完美傳輸。
+### 2. 高頻通訊與零拷貝 DMA 雙緩衝
+* **零丟包架構：** 為 921600 bps UART 實作 DMA Ping-Pong Buffer (雙緩衝區)，確保高頻感測資料流無損接收。
+* **車規級安全啟動時序：** 確立「先註冊資源、後開啟中斷」的嚴格時序，徹底消滅 MCU 開機瞬間因雜訊引發的 HardFault。
+* **軟體空閒輪詢 (Idle Polling)：** 導入 100Hz Super Loop 輪詢機制，完美繞過 ARM PL011 硬體 RX FIFO Timeout 限制，將 UART 佔用的 CPU 負載由 60% 驟降至 `< 5%`。
 
-### 2. 高頻通訊與零拷貝 DMA 雙緩衝 
-- **Ping-Pong Buffer 架構**：針對 921600 bps 極限傳輸，實作 DMA 雙緩衝機制解決中斷風暴。
-- **軟體輪詢 (Idle Polling) 演算法**：完美迴避 ARM PL011 硬體 FIFO 互斥陷阱，將通訊 CPU 佔用率壓低至 `< 5%`。
-- **消除競態條件 (Race Condition)**：透過隔離法揪出 UART RX 中斷提早觸發導致的 HardFault，確立「硬體資源先行分配，最後開啟中斷」的車規級初始化防禦紀律。
+### 3. 無鎖資料結構與 10kHz 併發壓測
+* **無鎖環形緩衝區 (Lock-Free Ring Buffer)：** 活用 ARM `__dmb()` (資料記憶體屏障) 實作單生產者、單消費者的 Ring Buffer，在不屏蔽全域中斷的嚴苛條件下防止資料競態 (Data Race)。
+* **USB 列舉防禦屏障：** 實作 `stdio_usb_connected()` 握手屏障，徹底解決 RP2350 開機過快與中斷風暴導致的 USB CDC 驅動餓死 (Starvation) 與 OS 列舉失敗盲區。
+* **Docker 化無塵室驗證：** 導入 Docker 容器化技術封裝 Ceedling 工具鏈，將 MISRA C 靜態分析與單元測試無縫對接至 CI/CD 自動化流水線。
 
-### 3. TDD 測試驅動開發與開機盲區防護
-- **開機握手防禦**：實作 `stdio_usb_connected()` 屏障，徹底解決 RP2350 開機過快與中斷風暴導致的 USB CDC 驅動餓死 (Starvation) 與列舉失敗盲區。
-- **Docker 化極速驗證**：導入 Docker + Ceedling (Unity/CMock) 工具鏈，將靜態分析與單元測試無縫整合至 CI Pipeline。
+### 4. 系統可觀測性與死後驗屍機制 (Day 8)
+* **零負擔崩潰黑盒子 (Crash Dump)：** 利用 136 Bytes 的 `.uninitialized_data` RAM 區段實作死後驗屍機制。確保微秒級時間戳記與致命錯誤 Log 在 Watchdog 或 HardFault 觸發重啟後依然存活，且零 Flash 抹寫損耗。
+* **確定性故障注入 (Fault Injection)：** 建構基於巨集參數化的故障注入框架，並與 2000ms 獨立看門狗同步，從數學上保證系統能確定性地從死鎖中復原並保留崩潰證據。
+* **符合 MISRA C 規範之觀察者模式：** 使用靜態陣列實作事件派發中介軟體 (禁用 `malloc`)。透過 TDD 邊界測試證明系統免疫緩衝區溢位，並正確配置 cppcheck 豁免以完美解決 Rule 7.2, 10.4, 17.7 等靜態分析違規。
+
+---
 
 ## 📂 專案目錄結構 (Architecture Tree)
 ```text
@@ -51,20 +63,31 @@
 ├── test/                 # Host 端單元測試 (TDD)
 │   ├── test_app_fsm.c    # 狀態機 100% 覆蓋率測試案例
 │   ├── test_app_main.c   # Super Loop 與 DMA 輪詢模擬測試
-│   └── test_ring_buffer.c # Ring Buffer 邏輯與邊界測試
+│   ├── test_ring_buffer.c# Ring Buffer 邏輯與邊界測試
+│   └── test_observer.c   # Observer Pattern 邊界與空指標防禦測試 (New)
 ├── src/
 │   ├── app/              # 跨平台業務邏輯層 (100% 獨立)
 │   │    ├── app_fsm.c    
 │   │    ├── app_fsm.h   
-│   │    └── app_main.c   # 系統主任務 (包含 10kHz 壓測驗證邏輯)      
+│   │    ├── app_main.c   # 系統主任務 (包含 10kHz 壓測驗證邏輯)      
 │   │    ├── app_main.h    
+│   │    ├── app_crash_dump.c # 死後驗屍與黑盒子存儲機制 (New)
+│   │    ├── app_crash_dump.h
 │   │    └── CMakeLists.txt   
 │   ├── utils/            # 純邏輯基礎設施 (Data Structures)
-│   │    └── ring_buffer.c # Lock-free 環形緩衝區實作
+│   │    ├── ring_buffer.c # Lock-free 環形緩衝區實作
+│   │    ├── ring_buffer.h
+│   │    ├── observer.c    # MISRA C 規範事件派發中介軟體 (New)
+│   │    ├── observer.h
+│   │    └── CMakeLists.txt   
 │   └── hal/              # 硬體抽象層 (Hardware Abstraction Layer)
 │       ├── include/      # HAL 介面定義
+│       │    ├── hal_atomic.h   
+│       │    ├── hal_dio.h 
+│       │    ├── hal_dma.h 
+│       │    └── hal_time.h     # 包含微秒級測時介面
 │       └── rp2350/       # RP2350 實體驅動實作
-│            ├── hal_time_rp2350.c  # 10kHz 硬體中斷與 __dmb() 屏障
+│            ├── hal_time_rp2350.c  # 微秒測時、10kHz 中斷與屏障
 │            ├── hal_dma_rp2350.c   # PL011 UART DMA 與競態防禦
 │            ├── hal_dio_rp2350.c    
-│            └── CMakeLists.txt 
+│            └── CMakeLists.txt

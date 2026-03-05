@@ -1,0 +1,54 @@
+main.c:25:0: information: Unmatched suppression: misra-c2012-17.7 [unmatchedSuppression]
+    printf("\n\n====================================\n");
+^
+main.c:25:0: information: Unmatched suppression: misra-c2012-21.6 [unmatchedSuppression]
+    printf("\n\n====================================\n");
+^
+main.c:29:0: information: Unmatched suppression: misra-c2012-17.7 [unmatchedSuppression]
+    printf("✅ USB Serial Connected Successfully!\n");
+^
+main.c:29:0: information: Unmatched suppression: misra-c2012-21.6 [unmatchedSuppression]
+    printf("✅ USB Serial Connected Successfully!\n");
+^
+main.c:33:0: information: Unmatched suppression: misra-c2012-17.7 [unmatchedSuppression]
+    printf("====================================\n\n");
+^
+main.c:33:0: information: Unmatched suppression: misra-c2012-21.6 [unmatchedSuppression]
+    printf("====================================\n\n");
+^
+src/app/app_main.c:22:0: information: Unmatched suppression: misra-c2012-17.7 [unmatchedSuppression]
+    printf("[Debug] 1. Init DIO...\n");
+^
+src/app/app_main.c:22:0: information: Unmatched suppression: misra-c2012-21.6 [unmatchedSuppression]
+    printf("[Debug] 1. Init DIO...\n");
+^
+src/app/app_main.c:27:0: information: Unmatched suppression: misra-c2012-17.7 [unmatchedSuppression]
+    printf("[Debug] 2. Init FSM...\n");
+^
+src/app/app_main.c:27:0: information: Unmatched suppression: misra-c2012-21.6 [unmatchedSuppression]
+    printf("[Debug] 2. Init FSM...\n");
+^
+src/app/app_main.c:36:0: information: Unmatched suppression: misra-c2012-17.7 [unmatchedSuppression]
+    printf("[Debug] 3. Init Ring Buffer...\n");
+^
+src/app/app_main.c:36:0: information: Unmatched suppression: misra-c2012-21.6 [unmatchedSuppression]
+    printf("[Debug] 3. Init Ring Buffer...\n");
+^
+src/app/app_main.c:41:0: information: Unmatched suppression: misra-c2012-17.7 [unmatchedSuppression]
+    printf("[Debug] 4. Start 10kHz Timer...\n");
+^
+src/app/app_main.c:41:0: information: Unmatched suppression: misra-c2012-21.6 [unmatchedSuppression]
+    printf("[Debug] 4. Start 10kHz Timer...\n");
+^
+src/app/app_main.c:46:0: information: Unmatched suppression: misra-c2012-17.7 [unmatchedSuppression]
+    printf("10kHz Stress Test Started...\n");
+^
+src/app/app_main.c:46:0: information: Unmatched suppression: misra-c2012-21.6 [unmatchedSuppression]
+    printf("10kHz Stress Test Started...\n");
+^
+src/app/app_main.c:90:0: information: Unmatched suppression: misra-c2012-17.7 [unmatchedSuppression]
+            printf("\n[FATAL] Data Corruption! Expected %d, got %d\n", expected_val, rx_data);
+^
+src/app/app_main.c:90:0: information: Unmatched suppression: misra-c2012-21.6 [unmatchedSuppression]
+            printf("\n[FATAL] Data Corruption! Expected %d, got %d\n", expected_val, rx_data);
+^
