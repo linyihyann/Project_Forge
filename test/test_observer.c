@@ -1,6 +1,5 @@
 #include "observer.h"
 #include "unity.h"
-
 // ==========================================
 // 🧪 測試用的 Mock Callbacks 與全域變數
 // ==========================================
@@ -24,6 +23,7 @@ void setUp(void)
 {
     // 每個測試開始前，強迫將 Observer 狀態清空，保證測試獨立性！
     observer_init();
+
     g_callback_A_called_count = 0;
     g_callback_B_called_count = 0;
 }

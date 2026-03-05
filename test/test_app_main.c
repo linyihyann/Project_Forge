@@ -2,12 +2,13 @@
 #include "unity.h"
 
 // 💡 讓 Ceedling 自動生成 HAL 與 FSM 的替身 (Mocks)
+#include "mock_app_crash_dump.h"
 #include "mock_app_fsm.h"
 #include "mock_hal_dio.h"
 #include "mock_hal_dma.h"
 #include "mock_hal_time.h"
+#include "mock_observer.h"
 #include "mock_ring_buffer.h"
-
 void setUp(void)
 {
     // 🌟 告訴替身：當 App Main 呼叫這些函數時，假裝有做事就好
@@ -23,6 +24,9 @@ void tearDown(void) {}
 // 測試系統初始化順序
 void test_app_main_init_Should_InitializeModulesInOrder(void)
 {
+    observer_init_Expect();
+    crash_dump_check_and_init_Expect();
+
     hal_dio_init_ExpectAndReturn(HAL_DIO_LED_HEARTBEAT, HAL_DIO_OK);
     app_fsm_init_Expect();
     app_fsm_process_event_ExpectAndReturn(FSM_EVENT_INIT_REQ, FSM_OK);
@@ -38,10 +42,7 @@ void test_app_main_init_Should_InitializeModulesInOrder(void)
 void test_app_main_task_Should_NotSendTick_When_TimeUnder100ms(void)
 {
     hal_time_get_ms_ExpectAndReturn(50);
-
-    // 🌟 模擬 DMA 輪詢：告訴它「目前沒有新資料」
-    hal_uart_dma_get_ready_packet_ExpectAnyArgsAndReturn(HAL_UART_ERR_NO_DATA);
-
+    // 🌟 刪除了舊的 DMA expect，因為我們現在用 rb_dequeue 並且在 setUp 已經 ignore 了
     app_main_task();
 }
 
@@ -50,9 +51,6 @@ void test_app_main_task_Should_SendTick_When_TimeReaches100ms(void)
 {
     hal_time_get_ms_ExpectAndReturn(100);
     app_fsm_process_event_ExpectAndReturn(FSM_EVENT_TICK, FSM_OK);
-
-    // 🌟 模擬 DMA 輪詢：告訴它「目前沒有新資料」
-    hal_uart_dma_get_ready_packet_ExpectAnyArgsAndReturn(HAL_UART_ERR_NO_DATA);
-
+    // 🌟 同樣刪除了舊的 DMA expect
     app_main_task();
 }

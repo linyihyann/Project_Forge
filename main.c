@@ -84,7 +84,7 @@ int main(void)
             (void)printf("\n😈 [FAULT INJECTION] 模擬 App 層死鎖或 HardFault...\n");
 
             // 寫下遺言到 .uninitialized_data 黑盒子區塊
-            crash_dump_save_log("FATAL: System deadlocked! WDT will trigger soon.");
+            (void)crash_dump_save_log("FATAL: System deadlocked! WDT will trigger soon.");
 
             while (1)
             {

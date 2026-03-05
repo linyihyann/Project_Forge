@@ -9,12 +9,20 @@
 #include "hal_time.h"
 #include "ring_buffer.h"  // 引入資料結構
 
+// 🌟 引入觀察者與黑盒子
+#include "app_crash_dump.h"
+#include "observer.h"
+
 static uint32_t last_tick = 0U;
 static ring_buffer_t g_test_rb;
 
 void app_main_init(void)
 {
     last_tick = 0U;
+
+    (void)printf("[Debug] 0. Init Observer & Crash Dump...\n");
+    (void)observer_init();              // 🌟 1. 開啟廣播電台
+    (void)crash_dump_check_and_init();  // 🌟 2. 檢查黑盒子，並向電台註冊訂閱
 
     (void)printf("[Debug] 1. Init DIO...\n");
     (void)hal_dio_init(HAL_DIO_LED_HEARTBEAT);
@@ -39,6 +47,7 @@ void app_main_task(void)
 {
     uint32_t now = hal_time_get_ms();
 
+    // 100ms 週期任務
     if ((now - last_tick) >= 100U)
     {
         (void)app_fsm_process_event(FSM_EVENT_TICK);
@@ -54,6 +63,7 @@ void app_main_task(void)
         last_tick = now;
     }
 
+    // 高頻資料處理與壓測驗證
     static uint8_t expected_val = 0;
     static bool first_read = true;
     uint8_t rx_data;
@@ -65,20 +75,22 @@ void app_main_task(void)
             expected_val = rx_data;
             first_read = false;
         }
-
-        if (rx_data != expected_val)
+        else
         {
-            (void)printf("\n[FATAL] Data Corruption! Expected %d, got %d\n", expected_val, rx_data);
-            (void)hal_dio_write(HAL_DIO_LED_HEARTBEAT, true);
-            expected_val = rx_data;
+            if (rx_data != expected_val)
+            {
+                (void)printf("\n[FATAL] Data Corruption! Expected %d, got %d\n", expected_val,
+                             rx_data);
+                (void)hal_dio_write(HAL_DIO_LED_HEARTBEAT, true);
+
+                /* 🌟 MISRA Rule 11.8 Deviation: 為了配合 Observer 的通用介面，暫時移除字串的 const
+                 * 屬性 */
+                // cppcheck-suppress misra-c2012-11.8
+                (void)observer_notify(EVENT_SYSTEM_FAULT, (void*)"Data Corruption in Ring Buffer!");
+
+                expected_val = rx_data;
+            }
+            expected_val = rx_data + 1U;
         }
-
-        expected_val++;
-    }
-
-    hal_uart_packet_t packet;
-    if (hal_uart_dma_get_ready_packet(&packet) == HAL_UART_OK)
-    {
-        hal_uart_dma_release_packet();
     }
 }
