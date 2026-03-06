@@ -21,7 +21,8 @@ cppcheck --enable=all \
          -I src/hal/include/ \
          -I src/utils/ \
          -I test \
-         src/app
+         src/app  \
+         src/utils
 
 EXIT_CODE=$?
 

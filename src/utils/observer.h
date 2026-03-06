@@ -2,7 +2,8 @@
 #define OBSERVER_H
 #include <stdint.h>
 
-#define MAX_OBSERVERS 10
+// cppcheck-suppress misra-c2012-2.5
+#define MAX_OBSERVERS 10U
 
 typedef enum
 {

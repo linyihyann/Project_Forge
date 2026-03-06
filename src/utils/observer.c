@@ -18,7 +18,10 @@ void observer_init(void)
 
 int32_t observer_subscribe(system_event_id_t event_id, event_cb_t callback)
 {
-    if (callback == NULL || s_observer_count >= MAX_OBSERVERS) return -1;
+    if ((callback == NULL) || (s_observer_count >= MAX_OBSERVERS))
+    {
+        return -1;  // 💡 提醒：MISRA 通常也要求 return 必須有大括號且單一出口
+    }
     s_observers[s_observer_count].event_id = event_id;
     s_observers[s_observer_count].callback = callback;
     s_observer_count++;

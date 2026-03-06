@@ -1,7 +1,8 @@
+#include "ring_buffer.h"
+
 #include <stddef.h>
 
 #include "hal_atomic.h"
-#include "ring_buffer.h"
 
 void rb_init(ring_buffer_t* rb)
 {
@@ -20,7 +21,7 @@ rb_status_t rb_enqueue(ring_buffer_t* rb, uint8_t data)
     }
 
     // 計算下一個 Head 的位置
-    uint32_t next_head = (rb->head + 1) & RB_MASK;
+    uint32_t next_head = (rb->head + 1U) & RB_MASK;
 
     // Drop Newest 滿載策略：若下一個 Head 撞到 Tail，代表已滿
     if (next_head == rb->tail)
@@ -41,7 +42,7 @@ rb_status_t rb_enqueue(ring_buffer_t* rb, uint8_t data)
 
 rb_status_t rb_dequeue(ring_buffer_t* rb, uint8_t* data)
 {
-    if (rb == NULL || data == NULL)
+    if ((rb == NULL) || (data == NULL))
     {
         return RB_ERROR_NULL;
     }
@@ -58,6 +59,6 @@ rb_status_t rb_dequeue(ring_buffer_t* rb, uint8_t* data)
     // 確保「讀取資料」的動作完成後，才釋放該空間 (推進 Tail 指標)
     hal_atomic_dmb();
 
-    rb->tail = (rb->tail + 1) & RB_MASK;
+    rb->tail = (rb->tail + 1U) & RB_MASK;
     return RB_OK;
 }
