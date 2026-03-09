@@ -7,7 +7,7 @@
 typedef struct
 {
     uint32_t magic;
-    uint32_t boot_time_us;
+    uint32_t crash_timestamp_us;
     char last_log[128];
 } crash_dump_t;
 

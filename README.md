@@ -17,10 +17,15 @@
 * **USB CDC Enumeration Barrier:** Implemented `stdio_usb_connected()` barrier, completely resolving USB CDC driver starvation and enumeration failure blind spots caused by RP2350 booting too fast and interrupt storms.
 * **Docker-based Extreme Validation:** Integrated Docker + Ceedling (Unity/CMock) toolchain, seamlessly integrating static analysis and unit testing into the CI Pipeline.
 
-### 4. System Observability & Post-mortem Debugging (Day 8)
+### 4. System Observability & Post-mortem Debugging
 * **Zero-Overhead Crash Dump:** Implemented a Tier-1 post-mortem debugging mechanism utilizing the `.uninitialized_data` RAM section (136 Bytes). It guarantees the survival of microsecond-level timestamps and fatal log strings across Watchdog timeouts and Warm Resets without flash wear-out.
 * **Deterministic Fault Injection:** Engineered a macro-driven fault injection framework synchronized with a 2000ms Watchdog Timer to mathematically guarantee deterministic system recovery and crash evidence preservation.
 * **MISRA C:2012 Compliant Observer Pattern:** Decoupled system events using a static Observer Pattern array (No `malloc`). Verified via TDD boundary tests to mathematically prove immunity to buffer overflows. Resolved Rules 7.2, 10.4, and 17.7 with proper static analysis suppression handling.
+
+### 5. I2C Bus Recovery & Hardware Fault Tolerance
+* **Microsecond Non-blocking Timeout:** Replaced legacy `while()` polling loops with DWT-based non-blocking architecture. Guarantees task exit within 5ms upon sensor disconnection, preventing Super Loop deadlock and WDT resets.
+* **9-Clock Bit-banging Auto-Recovery:** Implemented an ISO-26262 inspired auto-recovery state machine. Dynamically switches I2C pinmux to SIO (GPIO) to manually generate up to 9 SCL pulses to unlock stuck Slave devices (e.g., SSD1306), achieving < 2ms seamless bus self-healing without MCU reboot.
+* **Host-side Fault Injection TDD:** Configured CMock to inject `HAL_I2C_ERR_TIMEOUT` and `HAL_I2C_ERR_NACK` at the HAL boundary. Mathematically verified the App layer's "Fail-fast" logic and degraded-mode operation, achieving 100% path coverage for hardware failure scenarios.
 
 ---
 
@@ -41,11 +46,15 @@
 * **USB 列舉防禦屏障：** 實作 `stdio_usb_connected()` 握手屏障，徹底解決 RP2350 開機過快與中斷風暴導致的 USB CDC 驅動餓死 (Starvation) 與 OS 列舉失敗盲區。
 * **Docker 化無塵室驗證：** 導入 Docker 容器化技術封裝 Ceedling 工具鏈，將 MISRA C 靜態分析與單元測試無縫對接至 CI/CD 自動化流水線。
 
-### 4. 系統可觀測性與死後驗屍機制 (Day 8)
+### 4. 系統可觀測性與死後驗屍機制
 * **零負擔崩潰黑盒子 (Crash Dump)：** 利用 136 Bytes 的 `.uninitialized_data` RAM 區段實作死後驗屍機制。確保微秒級時間戳記與致命錯誤 Log 在 Watchdog 或 HardFault 觸發重啟後依然存活，且零 Flash 抹寫損耗。
 * **確定性故障注入 (Fault Injection)：** 建構基於巨集參數化的故障注入框架，並與 2000ms 獨立看門狗同步，從數學上保證系統能確定性地從死鎖中復原並保留崩潰證據。
 * **符合 MISRA C 規範之觀察者模式：** 使用靜態陣列實作事件派發中介軟體 (禁用 `malloc`)。透過 TDD 邊界測試證明系統免疫緩衝區溢位，並正確配置 cppcheck 豁免以完美解決 Rule 7.2, 10.4, 17.7 等靜態分析違規。
 
+### 5. I2C 總線自癒與硬體容錯防禦
+* **微秒級非阻塞超時防禦：** 汰除傳統死等 `while()` 迴圈，實作基於 DWT 的非阻塞架構。確保感測器斷線時在 5ms 內安全退出，徹底消滅 Super Loop 假死與非預期 WDT 重啟。
+* **9-Clock 總線動態解鎖：** 實作符合 ISO 26262 精神之自動復原機制。遇總線死鎖時，動態切換 I2C Pinmux 為 GPIO，手動打出最多 9 個 Clock 強制 Slave 釋放 SDA，達成 < 2ms 的無縫自癒 (Self-healing)。
+* **Host 端硬體故障注入測試：** 利用 CMock 於硬體抽象邊界精準注入 Timeout 與 NACK 錯誤。在 macOS 測試環境中嚴格驗證 App 層的「快速失敗 (Fail-fast)」與降級運轉邏輯，達成 100% 硬體失效路徑覆蓋率。
 ---
 
 ## 📂 專案目錄結構 (Architecture Tree)
@@ -64,7 +73,8 @@
 │   ├── test_app_fsm.c    # 狀態機 100% 覆蓋率測試案例
 │   ├── test_app_main.c   # Super Loop 與 DMA 輪詢模擬測試
 │   ├── test_ring_buffer.c# Ring Buffer 邏輯與邊界測試
-│   └── test_observer.c   # Observer Pattern 邊界與空指標防禦測試 (New)
+│   ├── test_observer.c   # Observer Pattern 邊界與空指標防禦測試
+│   └── test_app_ssd1306.c# SSD1306 硬體故障注入與 Fail-fast 邊界測試
 ├── src/
 │   ├── app/              # 跨平台業務邏輯層 (100% 獨立)
 │   │    ├── app_fsm.c    
@@ -73,6 +83,10 @@
 │   │    ├── app_main.h    
 │   │    ├── app_crash_dump.c # 死後驗屍與黑盒子存儲機制 (New)
 │   │    ├── app_crash_dump.h
+│   │    ├── app_system.c     
+│   │    ├── app_system.h    
+│   │    ├── app_ssd1306.c    # OLED 繪圖與 Fail-fast 狀態機 (New)
+│   │    └── app_ssd1306.h
 │   │    └── CMakeLists.txt   
 │   ├── utils/            # 純邏輯基礎設施 (Data Structures)
 │   │    ├── ring_buffer.c # Lock-free 環形緩衝區實作
@@ -85,9 +99,11 @@
 │       │    ├── hal_atomic.h   
 │       │    ├── hal_dio.h 
 │       │    ├── hal_dma.h 
-│       │    └── hal_time.h     # 包含微秒級測時介面
+│       │    ├── hal_time.h     # 包含微秒級測時介面
+│       │    └── hal_i2c.h      # 嚴格定義 I2C 異常狀態碼與防禦介面 (New)
 │       └── rp2350/       # RP2350 實體驅動實作
 │            ├── hal_time_rp2350.c  # 微秒測時、10kHz 中斷與屏障
 │            ├── hal_dma_rp2350.c   # PL011 UART DMA 與競態防禦
 │            ├── hal_dio_rp2350.c    
+│            ├── hal_i2c_rp2350.c   # 非阻塞 I2C 傳輸與 9-Clock 復原實作 (New)
 │            └── CMakeLists.txt

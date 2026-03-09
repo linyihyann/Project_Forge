@@ -27,7 +27,7 @@ add_executable(firmware main.c)
 
 # 2. 🌟 呼叫子資料夾 (它們會把代碼直接掛載給 firmware)
 add_subdirectory(src/app)
-add_subdirectory(src/utils) # 🆕 掛載純邏輯基礎設施
+add_subdirectory(src/utils)
 add_subdirectory(src/hal/rp2350)
 
 # 3. 🌟 廠長統一配發引擎與底層 (只在這裡呼叫一次 SDK)
@@ -35,6 +35,9 @@ target_link_libraries(firmware PRIVATE
     pico_standard_link
     pico_cyw43_arch_none 
     pico_stdlib
+    hardware_i2c      # 🌟 加上這行！賦予 firmware 使用 I2C 暫存器的權限
+    hardware_dma      # (如果你之前 DMA 沒加，建議一併補上)
+    hardware_uart     # (如果你之前 UART 沒加，建議一併補上)   
 )
 
 pico_enable_stdio_usb(firmware 1)

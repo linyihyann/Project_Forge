@@ -18,14 +18,11 @@ void crash_dump_save_log(const char* log_msg)
 {
     if (log_msg != NULL)
     {
-        // 1. 將收到的遺言複製進黑盒子 (注意邊界防禦)
         (void)strncpy(g_crash_dump.last_log, log_msg, sizeof(g_crash_dump.last_log) - 1U);
         g_crash_dump.last_log[sizeof(g_crash_dump.last_log) - 1U] = '\0';
 
-        // 2. 記錄死前狀態 (未來若有 hal_time_get_us 可在此替換)
-        g_crash_dump.boot_time_us = 12345U;
+        g_crash_dump.crash_timestamp_us = hal_time_get_us();
 
-        // 3. 封印黑盒子
         g_crash_dump.magic = CRASH_MAGIC_NUMBER;
     }
 }
@@ -52,7 +49,7 @@ void crash_dump_check_and_init(void)
     {
         (void)printf("\r\n🚨 [FATAL EXCEPTION DETECTED] 🚨\r\n");
         (void)printf("⚠️ 偵測到 Watchdog / HardFault 異常重啟！\r\n");
-        (void)printf("⚠️ 上次死機前 Boot Time: %" PRIu32 " us\r\n", g_crash_dump.boot_time_us);
+        (void)printf("⚠️ 上次死機前 Boot Time: %" PRIu32 " us\r\n", g_crash_dump.crash_timestamp_us);
         (void)printf("⚠️ 死機前最後遺言: %s\r\n", g_crash_dump.last_log);
         (void)printf("========================================\r\n");
 

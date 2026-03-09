@@ -27,7 +27,7 @@ cppcheck --enable=all \
 EXIT_CODE=$?
 
 if [ $EXIT_CODE -eq 0 ]; then
-    echo "✅ MISRA C 檢查通過！(src/app 乾淨無瑕)"
+    echo "✅ MISRA C 檢查通過！"
 else
     echo "❌ 發現違規！請修正上述 MISRA C / 靜態分析錯誤。"
     exit 1

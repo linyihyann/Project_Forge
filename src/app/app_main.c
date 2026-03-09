@@ -4,8 +4,10 @@
 #include <stdio.h>  // 給 printf 報錯用
 
 #include "app_fsm.h"
+#include "app_ssd1306.h"
 #include "hal_dio.h"
 #include "hal_dma.h"
+#include "hal_i2c.h"
 #include "hal_time.h"
 #include "ring_buffer.h"  // 引入資料結構
 
@@ -28,7 +30,7 @@ void app_main_init(void)
     (void)hal_dio_init(HAL_DIO_LED_HEARTBEAT);
 
     (void)printf("[Debug] 2. Init FSM...\n");
-    app_fsm_init();
+    (void)app_fsm_init();
     (void)app_fsm_process_event(FSM_EVENT_INIT_REQ);
 
     (void)hal_uart_dma_init(921600);
@@ -36,6 +38,20 @@ void app_main_init(void)
 
     (void)printf("[Debug] 3. Init Ring Buffer...\n");
     (void)rb_init(&g_test_rb);
+
+    /* 🌟 新增：初始化 I2C (400kHz) 與 SSD1306 */
+    (void)printf("[Debug] 3.5 Init I2C & SSD1306...\n");
+    (void)hal_i2c_init(400000U);
+    /* 這裡為了讓 OLED 電源穩定，可以用 Pico SDK 的 sleep_ms(100) 稍微等一下 */
+    /* 因為在 Init 階段，稍微 Block 一下是可以接受的 */
+    if (app_ssd1306_init() == true)
+    {
+        (void)printf("[INFO] SSD1306 OLED initialized successfully.\n");
+    }
+    else
+    {
+        (void)printf("[ERR] SSD1306 init failed! Check wiring.\n");
+    }
 
     (void)printf("[Debug] 4. Start 10kHz Timer...\n");
     (void)hal_time_start_10khz_producer(&g_test_rb);
@@ -54,6 +70,23 @@ void app_main_task(void)
 
         static uint8_t sec_count = 0;
         sec_count++;
+
+        if ((sec_count % 5U) == 0U)
+        {
+            static uint8_t screen_pattern = 0xFFU;
+            if (app_ssd1306_fill(screen_pattern) == false)
+            {
+                (void)printf("[WARN] I2C TX Failed! Triggering 9-Clock Recovery...\n");
+
+                // 🌟 啟動 Tier-1 級別的總線復原
+                (void)hal_i2c_bus_recovery();
+
+                // 復原後重新初始化 OLED 狀態機
+                (void)app_ssd1306_init();
+            }
+            screen_pattern = (screen_pattern == 0xFFU) ? 0x00U : 0xFFU;
+        }
+
         if (sec_count >= 10U)
         {
             (void)printf("[System] Alive! 10kHz Stress Test is running...\n");
