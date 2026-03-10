@@ -34,23 +34,32 @@
 * **Headless Automated Validation:** Implemented a robust USB CDC timeout fallback mechanism, enabling automated standalone stress testing via Power Bank without Host PC intervention, fully immune to USB enumeration deadlocks caused by rapid Watchdog reboots.
 
 ---
-
 ## 🌟 核心特色 (繁體中文)
 
 ### 1. 測試驅動開發 (TDD) 與 100% 程式碼覆蓋率
-*(維持原樣...)*
+* **Host 端測試極速回饋：** 透過 **Ceedling** 構建系統，在 macOS/Linux 上使用 **Unity** 與 **CMock** 執行單元測試，達成 `< 0.5s` 的極速重構回饋。
+* **嚴格硬體解耦與時序驗證：** 配置 CMock `:enforce_strict_ordering: TRUE`，嚴格驗證底層硬體 API 的呼叫順序與時序邏輯。
+* **零負擔測試掛載：** 透過 C 語言巨集 `#ifdef TEST` 隔離單元測試狀態，徹底根除測試代碼污染量產唯讀記憶體 (ROM) 的風險。
 
 ### 2. 高頻通訊與零拷貝 DMA 雙緩衝
-*(維持原樣...)*
+* **零丟包架構：** 為 921600 bps UART 實作 DMA Ping-Pong Buffer (雙緩衝區)，確保高頻感測資料流無損接收。
+* **車規級安全啟動時序：** 確立「先註冊資源、後開啟中斷」的嚴格時序，徹底消滅 MCU 開機瞬間因雜訊引發的 HardFault。
+* **軟體空閒輪詢 (Idle Polling)：** 導入 100Hz Super Loop 輪詢機制，完美繞過 ARM PL011 硬體 RX FIFO Timeout 限制，將 UART 佔用的 CPU 負載由 60% 驟降至 `< 5%`。
 
 ### 3. 無鎖資料結構與 10kHz 併發壓測
-*(維持原樣...)*
+* **無鎖環形緩衝區 (Lock-Free Ring Buffer)：** 活用 ARM `__dmb()` (資料記憶體屏障) 實作單生產者、單消費者的 Ring Buffer，在不屏蔽全域中斷的嚴苛條件下防止資料競態 (Data Race)。
+* **USB 列舉防禦屏障：** 實作 `stdio_usb_connected()` 握手屏障，徹底解決 RP2350 開機過快與中斷風暴導致的 USB CDC 驅動餓死 (Starvation) 與 OS 列舉失敗盲區。
+* **Docker 化無塵室驗證：** 導入 Docker 容器化技術封裝 Ceedling 工具鏈，將 MISRA C 靜態分析與單元測試無縫對接至 CI/CD 自動化流水線。
 
 ### 4. 系統可觀測性與死後驗屍機制
-*(維持原樣...)*
+* **零負擔崩潰黑盒子 (Crash Dump)：** 利用 136 Bytes 的 `.uninitialized_data` RAM 區段實作死後驗屍機制。確保微秒級時間戳記與致命錯誤 Log 在 Watchdog 或 HardFault 觸發重啟後依然存活，且零 Flash 抹寫損耗。
+* **確定性故障注入 (Fault Injection)：** 建構基於巨集參數化的故障注入框架，並與 2000ms 獨立看門狗同步，從數學上保證系統能確定性地從死鎖中復原並保留崩潰證據。
+* **符合 MISRA C 規範之觀察者模式：** 使用靜態陣列實作事件派發中介軟體 (禁用 `malloc`)。透過 TDD 邊界測試證明系統免疫緩衝區溢位，並正確配置 cppcheck 豁免以完美解決 Rule 7.2, 10.4, 17.7 等靜態分析違規。
 
 ### 5. I2C 總線自癒與硬體容錯防禦
-*(維持原樣...)*
+* **微秒級非阻塞超時防禦：** 汰除傳統死等 `while()` 迴圈，實作基於 DWT 的非阻塞架構。確保感測器斷線時在 5ms 內安全退出，徹底消滅 Super Loop 假死與非預期 WDT 重啟。
+* **9-Clock 總線動態解鎖：** 實作符合 ISO 26262 精神之自動復原機制。遇總線死鎖時，動態切換 I2C Pinmux 為 GPIO，手動打出最多 9 個 Clock 強制 Slave 釋放 SDA，達成 < 2ms 的無縫自癒 (Self-healing)。
+* **Host 端硬體故障注入測試：** 利用 CMock 於硬體抽象邊界精準注入 Timeout 與 NACK 錯誤。在 macOS 測試環境中嚴格驗證 App 層的「快速失敗 (Fail-fast)」與降級運轉邏輯，達成 100% 硬體失效路徑覆蓋率。
 
 ### 6. 抗斷電儲存架構與無頭壓測驗證 (New)
 * **100% 斷電存活率：** 透過極度解耦的服務層 (`srv_fs`) 導入 **LittleFS**，達成 0 Bytes 動態記憶體 (Heap) 消耗。經 1,000 次基於微秒級偽亂數觸發的 Watchdog 實體斷電壓測，證明資料零損毀。
