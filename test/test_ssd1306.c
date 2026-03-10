@@ -2,63 +2,78 @@
 #include "app_ssd1306.h"
 #include "unity.h"
 
-/* 🌟 引入 CMock 自動生成的假硬體介面 */
-#include "mock_hal_i2c.h"
+// =====================================================================
+// 🌟 測試用假硬體 (Test Double)
+// =====================================================================
+static bool g_fake_tx_should_succeed = true;
+static uint32_t g_fake_tx_call_count = 0U;
+static uint32_t g_fake_tx_fail_on_call = 0U;
 
+static bool fake_i2c_tx(uint8_t dev_addr, const uint8_t* p_data, uint16_t length)
+{
+    (void)dev_addr;
+    (void)p_data;
+    (void)length;
+
+    g_fake_tx_call_count++;
+
+    if ((g_fake_tx_fail_on_call != 0U) && (g_fake_tx_call_count >= g_fake_tx_fail_on_call))
+    {
+        return false;
+    }
+    return g_fake_tx_should_succeed;
+}
+
+static const app_ssd1306_cfg_t g_test_cfg = {.i2c_tx = fake_i2c_tx};
+
+// =====================================================================
 void setUp(void)
 {
-    /* 每次測試前的初始化 (此處留空即可) */
+    g_fake_tx_should_succeed = true;
+    g_fake_tx_call_count = 0U;
+    g_fake_tx_fail_on_call = 0U;
 }
 
-void tearDown(void)
-{
-    /* 每次測試後的清理 (此處留空即可) */
-}
+void tearDown(void) {}
 
-/* =====================================================================
- * 🧪 測試案例 1：Happy Path - 完美啟動
- * ===================================================================== */
+// =====================================================================
+// 🧪 TC-01：Happy Path
+// =====================================================================
 void test_app_ssd1306_init_should_ReturnTrue_When_I2cIsOk(void)
 {
-    /* [Arrange] 假裝底層 I2C 永遠回傳成功 */
-    hal_i2c_master_tx_IgnoreAndReturn(HAL_I2C_OK);
-
-    /* [Act] */
-    bool result = app_ssd1306_init();
-
-    /* [Assert] */
+    bool result = app_ssd1306_init(&g_test_cfg);
     TEST_ASSERT_TRUE_MESSAGE(result, "Init should succeed when I2C is OK.");
 }
 
-/* =====================================================================
- * 🧪 測試案例 2：Fail-fast - 硬體卡死防禦
- * ===================================================================== */
+// =====================================================================
+// 🧪 TC-02：Fail-fast
+// =====================================================================
 void test_app_ssd1306_init_should_ReturnFalse_And_FailFast_When_I2cTimeout(void)
 {
-    /* [Arrange] 預期 App 只會呼叫 1 次 I2C (因為第一次就會拿到 TIMEOUT 並 break) */
-    hal_i2c_master_tx_ExpectAnyArgsAndReturn(HAL_I2C_ERR_TIMEOUT);
+    g_fake_tx_fail_on_call = 1U;
 
-    /* [Act] */
-    bool result = app_ssd1306_init();
+    bool result = app_ssd1306_init(&g_test_cfg);
 
-    /* [Assert] 必須攔截到錯誤並回傳 false */
     TEST_ASSERT_FALSE_MESSAGE(result,
-                              "Init should return false and abort immediately on I2C Timeout.");
+                              "Init should return false and abort immediately on I2C error.");
+    TEST_ASSERT_EQUAL_UINT32_MESSAGE(1U, g_fake_tx_call_count,
+                                     "Should stop immediately after first I2C failure.");
 }
 
-/* =====================================================================
- * 🧪 測試案例 3：Mid-flight Failure - 繪圖中途被拔線
- * ===================================================================== */
+// =====================================================================
+// 🧪 TC-03：Mid-flight Failure
+// =====================================================================
 void test_app_ssd1306_fill_should_ReturnFalse_When_MidwayNack(void)
 {
-    /* [Arrange] 模擬：寫入第 1 個 Page 成功，寫入第 2 個 Page 時線路鬆脫 (NACK) */
-    hal_i2c_master_tx_ExpectAnyArgsAndReturn(HAL_I2C_OK);       /* 第 1 次呼叫：成功 */
-    hal_i2c_master_tx_ExpectAnyArgsAndReturn(HAL_I2C_ERR_NACK); /* 第 2 次呼叫：失敗 */
+    (void)app_ssd1306_init(&g_test_cfg);
 
-    /* [Act] */
+    g_fake_tx_call_count = 0U;
+    g_fake_tx_fail_on_call = 2U;
+
     bool result = app_ssd1306_fill(0xFFU);
 
-    /* [Assert] 必須在第 2 個 Page 發生錯誤時立刻回傳 false */
     TEST_ASSERT_FALSE_MESSAGE(result,
-                              "Fill should abort and return false if a mid-flight NACK occurs.");
+                              "Fill should abort and return false if a mid-flight error occurs.");
+    TEST_ASSERT_EQUAL_UINT32_MESSAGE(2U, g_fake_tx_call_count,
+                                     "Should stop at the second page on NACK.");
 }

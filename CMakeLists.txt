@@ -22,6 +22,8 @@ add_compile_options(
     "-fdebug-prefix-map=${CMAKE_SOURCE_DIR}=."
 )
 
+# ... (前面的程式碼保持不變) ...
+
 # 1. 🌟 先創造執行檔 (廠長)
 add_executable(firmware main.c)
 
@@ -29,16 +31,28 @@ add_executable(firmware main.c)
 add_subdirectory(src/app)
 add_subdirectory(src/utils)
 add_subdirectory(src/hal/rp2350)
+add_subdirectory(src/srv)
+add_subdirectory(src/third_party)
+
+target_include_directories(firmware PRIVATE
+    src/third_party/littlefs  # 讓 app_fs_stress.c 找得到 "lfs.h"
+    src/srv                   # 讓 app_fs_stress.c 找得到 "srv_fs.h"
+    src/hal/include           # 確保所有模組都能找到 HAL 介面
+)
 
 # 3. 🌟 廠長統一配發引擎與底層 (只在這裡呼叫一次 SDK)
 target_link_libraries(firmware PRIVATE 
     pico_standard_link
-    pico_cyw43_arch_none 
+    pico_cyw43_arch_none
     pico_stdlib
-    hardware_i2c      # 🌟 加上這行！賦予 firmware 使用 I2C 暫存器的權限
-    hardware_dma      # (如果你之前 DMA 沒加，建議一併補上)
-    hardware_uart     # (如果你之前 UART 沒加，建議一併補上)   
+    littlefs_lib
+    hardware_i2c      # 🌟 加上這行！賦予 firmware 使用 I2C 暫存器的權限 
+    hardware_dma      # (如果你之前 DMA 沒加，建議一併補上) [cite: 2]
+    hardware_uart     # (如果你之前 UART 沒加，建議一併補上) [cite: 2]
+    hardware_watchdog # 🌟 Day 10/18 防禦必備：賦予 firmware 呼叫 watchdog API 的權限
 )
+
+# ... (後面的程式碼保持不變) ...
 
 pico_enable_stdio_usb(firmware 1)
 pico_enable_stdio_uart(firmware 0)

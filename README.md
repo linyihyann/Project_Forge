@@ -27,36 +27,38 @@
 * **9-Clock Bit-banging Auto-Recovery:** Implemented an ISO-26262 inspired auto-recovery state machine. Dynamically switches I2C pinmux to SIO (GPIO) to manually generate up to 9 SCL pulses to unlock stuck Slave devices (e.g., SSD1306), achieving < 2ms seamless bus self-healing without MCU reboot.
 * **Host-side Fault Injection TDD:** Configured CMock to inject `HAL_I2C_ERR_TIMEOUT` and `HAL_I2C_ERR_NACK` at the HAL boundary. Mathematically verified the App layer's "Fail-fast" logic and degraded-mode operation, achieving 100% path coverage for hardware failure scenarios.
 
+### 6. Power-Loss Resilient Storage & Headless Stress Testing (New)
+* **100% Power-Loss Survival:** Integrated **LittleFS** via a strictly decoupled Service Layer (`srv_fs`), achieving 0 Bytes of Heap consumption. Successfully validated by a 1,000-cycle pseudo-random Watchdog hard-reset stress test with zero data corruption.
+* **Dependency Injection (DI) Architecture:** Completely eradicated hardware SDK dependencies (`hardware/watchdog`, `hal_time`) from the Application layer using function pointer injection at the Composition Root (`main.c`), achieving 100% platform-agnostic business logic.
+* **Hardware-Accurate TDD Fault Injection:** Engineered a "Global Death Flag" mechanism in Ceedling CMock to simulate true physical power loss (blocking all Read/Prog/Erase/Sync operations post-fault). Mathematically proved the Fail-Safe recovery algorithm of the File System.
+* **Headless Automated Validation:** Implemented a robust USB CDC timeout fallback mechanism, enabling automated standalone stress testing via Power Bank without Host PC intervention, fully immune to USB enumeration deadlocks caused by rapid Watchdog reboots.
+
 ---
 
 ## 🌟 核心特色 (繁體中文)
 
 ### 1. 測試驅動開發 (TDD) 與 100% 程式碼覆蓋率
-* **Host 端測試極速回饋：** 透過 **Ceedling** 構建系統，在 macOS/Linux 上使用 **Unity** 與 **CMock** 執行單元測試，達成 `< 0.5s` 的極速重構回饋。
-* **嚴格硬體解耦與時序驗證：** 配置 CMock `:enforce_strict_ordering: TRUE`，嚴格驗證底層硬體 API 的呼叫順序與時序邏輯。
-* **零負擔測試掛載：** 透過 C 語言巨集 `#ifdef TEST` 隔離單元測試狀態，徹底根除測試代碼污染量產唯讀記憶體 (ROM) 的風險。
+*(維持原樣...)*
 
 ### 2. 高頻通訊與零拷貝 DMA 雙緩衝
-* **零丟包架構：** 為 921600 bps UART 實作 DMA Ping-Pong Buffer (雙緩衝區)，確保高頻感測資料流無損接收。
-* **車規級安全啟動時序：** 確立「先註冊資源、後開啟中斷」的嚴格時序，徹底消滅 MCU 開機瞬間因雜訊引發的 HardFault。
-* **軟體空閒輪詢 (Idle Polling)：** 導入 100Hz Super Loop 輪詢機制，完美繞過 ARM PL011 硬體 RX FIFO Timeout 限制，將 UART 佔用的 CPU 負載由 60% 驟降至 `< 5%`。
+*(維持原樣...)*
 
 ### 3. 無鎖資料結構與 10kHz 併發壓測
-* **無鎖環形緩衝區 (Lock-Free Ring Buffer)：** 活用 ARM `__dmb()` (資料記憶體屏障) 實作單生產者、單消費者的 Ring Buffer，在不屏蔽全域中斷的嚴苛條件下防止資料競態 (Data Race)。
-* **USB 列舉防禦屏障：** 實作 `stdio_usb_connected()` 握手屏障，徹底解決 RP2350 開機過快與中斷風暴導致的 USB CDC 驅動餓死 (Starvation) 與 OS 列舉失敗盲區。
-* **Docker 化無塵室驗證：** 導入 Docker 容器化技術封裝 Ceedling 工具鏈，將 MISRA C 靜態分析與單元測試無縫對接至 CI/CD 自動化流水線。
+*(維持原樣...)*
 
 ### 4. 系統可觀測性與死後驗屍機制
-* **零負擔崩潰黑盒子 (Crash Dump)：** 利用 136 Bytes 的 `.uninitialized_data` RAM 區段實作死後驗屍機制。確保微秒級時間戳記與致命錯誤 Log 在 Watchdog 或 HardFault 觸發重啟後依然存活，且零 Flash 抹寫損耗。
-* **確定性故障注入 (Fault Injection)：** 建構基於巨集參數化的故障注入框架，並與 2000ms 獨立看門狗同步，從數學上保證系統能確定性地從死鎖中復原並保留崩潰證據。
-* **符合 MISRA C 規範之觀察者模式：** 使用靜態陣列實作事件派發中介軟體 (禁用 `malloc`)。透過 TDD 邊界測試證明系統免疫緩衝區溢位，並正確配置 cppcheck 豁免以完美解決 Rule 7.2, 10.4, 17.7 等靜態分析違規。
+*(維持原樣...)*
 
 ### 5. I2C 總線自癒與硬體容錯防禦
-* **微秒級非阻塞超時防禦：** 汰除傳統死等 `while()` 迴圈，實作基於 DWT 的非阻塞架構。確保感測器斷線時在 5ms 內安全退出，徹底消滅 Super Loop 假死與非預期 WDT 重啟。
-* **9-Clock 總線動態解鎖：** 實作符合 ISO 26262 精神之自動復原機制。遇總線死鎖時，動態切換 I2C Pinmux 為 GPIO，手動打出最多 9 個 Clock 強制 Slave 釋放 SDA，達成 < 2ms 的無縫自癒 (Self-healing)。
-* **Host 端硬體故障注入測試：** 利用 CMock 於硬體抽象邊界精準注入 Timeout 與 NACK 錯誤。在 macOS 測試環境中嚴格驗證 App 層的「快速失敗 (Fail-fast)」與降級運轉邏輯，達成 100% 硬體失效路徑覆蓋率。
----
+*(維持原樣...)*
 
+### 6. 抗斷電儲存架構與無頭壓測驗證 (New)
+* **100% 斷電存活率：** 透過極度解耦的服務層 (`srv_fs`) 導入 **LittleFS**，達成 0 Bytes 動態記憶體 (Heap) 消耗。經 1,000 次基於微秒級偽亂數觸發的 Watchdog 實體斷電壓測，證明資料零損毀。
+* **依賴注入 (Dependency Injection) 徹底解耦：** 於佈線層 (`main.c`) 透過函數指標注入底層依賴，將硬體看門狗與計時器從 App 層徹底拔除，達成 100% 平台無關 (Platform-Agnostic) 的純軟體業務邏輯。
+* **貼合物理限制的 TDD 故障注入：** 於 Ceedling 單元測試環境中實作「全域死亡旗標 (Global Death Flag)」，精準模擬拔除電源後實體 Flash 拒絕讀寫的物理反應，數學級驗證檔案系統的 Fail-Safe 格式化復原邏輯。
+* **無頭壓測架構 (Headless Validation)：** 實作具備 Timeout 防禦的 USB CDC 列舉機制，使 MCU 能脫離主機電腦，僅靠行動電源獨立執行上千次斷電循環驗證，徹底解決密集重啟導致的 USB 驅動死鎖問題。
+
+---
 ## 📂 專案目錄結構 (Architecture Tree)
 ```text
 ├── CMakeLists.txt        # 總裝配線 (Composition Root)
@@ -74,24 +76,34 @@
 │   ├── test_app_main.c   # Super Loop 與 DMA 輪詢模擬測試
 │   ├── test_ring_buffer.c# Ring Buffer 邏輯與邊界測試
 │   ├── test_observer.c   # Observer Pattern 邊界與空指標防禦測試
-│   └── test_app_ssd1306.c# SSD1306 硬體故障注入與 Fail-fast 邊界測試
+│   ├── test_app_ssd1306.c# SSD1306 硬體故障注入與 Fail-fast 
+│   └── test_srv_fs.c     # 全域死亡旗標斷電模擬與 LittleFS 掛載測試
 ├── src/
 │   ├── app/              # 跨平台業務邏輯層 (100% 獨立)
+│   │    ├── app_fs_stress.c  # 依賴注入架構之斷電壓測模組
+│   │    ├── app_fs_stress.h  
 │   │    ├── app_fsm.c    
 │   │    ├── app_fsm.h   
-│   │    ├── app_main.c   # 系統主任務 (包含 10kHz 壓測驗證邏輯)      
+│   │    ├── app_main.c         # 系統主任務 (包含 10kHz 壓測驗證邏輯)      
 │   │    ├── app_main.h    
-│   │    ├── app_crash_dump.c # 死後驗屍與黑盒子存儲機制 (New)
+│   │    ├── app_crash_dump.c   # 死後驗屍與黑盒子存儲機制
 │   │    ├── app_crash_dump.h
 │   │    ├── app_system.c     
 │   │    ├── app_system.h    
-│   │    ├── app_ssd1306.c    # OLED 繪圖與 Fail-fast 狀態機 (New)
+│   │    ├── app_ssd1306.c      # OLED 繪圖與 Fail-fast 狀態機
 │   │    └── app_ssd1306.h
 │   │    └── CMakeLists.txt   
-│   ├── utils/            # 純邏輯基礎設施 (Data Structures)
+│   ├── srv/                    # 服務層 (中介封裝)
+│   │    ├── srv_fs.c           # LittleFS 靜態記憶體配置與 Adapter Pattern 轉接層 
+│   │    ├── srv_fs.h          
+│   │    └── CMakeLists.txt
+│   ├── third_party/      # 第三方套件
+│   │    ├── littlefs/    # 極輕量級抗斷電檔案系統 
+│   │    └── CMakeLists.txt
+│   ├── utils/                  # 純邏輯基礎設施 (Data Structures)
 │   │    ├── ring_buffer.c # Lock-free 環形緩衝區實作
 │   │    ├── ring_buffer.h
-│   │    ├── observer.c    # MISRA C 規範事件派發中介軟體 (New)
+│   │    ├── observer.c    # MISRA C 規範事件派發中介軟體
 │   │    ├── observer.h
 │   │    └── CMakeLists.txt   
 │   └── hal/              # 硬體抽象層 (Hardware Abstraction Layer)
@@ -100,10 +112,12 @@
 │       │    ├── hal_dio.h 
 │       │    ├── hal_dma.h 
 │       │    ├── hal_time.h     # 包含微秒級測時介面
-│       │    └── hal_i2c.h      # 嚴格定義 I2C 異常狀態碼與防禦介面 (New)
+│       │    ├── hal_i2c.h      # 嚴格定義 I2C 異常狀態碼與防禦介面
+│       │    └── hal_flash.h    # Flash 記憶體操作介面
 │       └── rp2350/       # RP2350 實體驅動實作
 │            ├── hal_time_rp2350.c  # 微秒測時、10kHz 中斷與屏障
 │            ├── hal_dma_rp2350.c   # PL011 UART DMA 與競態防禦
 │            ├── hal_dio_rp2350.c    
-│            ├── hal_i2c_rp2350.c   # 非阻塞 I2C 傳輸與 9-Clock 復原實作 (New)
+│            ├── hal_i2c_rp2350.c   # 非阻塞 I2C 傳輸與 9-Clock 復原實作
+│            ├── hal_flash_rp2350.c # XIP 實體位址轉換與越界防禦
 │            └── CMakeLists.txt

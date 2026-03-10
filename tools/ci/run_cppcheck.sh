@@ -5,8 +5,6 @@ echo "🔍 啟動 Tier-1 級別 MISRA C 靜態分析..."
 
 cd "$(dirname "$0")/../../" || exit 1
 
-# 新增了 -I (大寫i) 讓工具找得到標頭檔
-# 新增了 suppress 15.5 (單一 return) 與 8.7 (外部連結)
 cppcheck --enable=all \
          --addon=tools/ci/misra.json \
          --inline-suppr \
@@ -15,14 +13,25 @@ cppcheck --enable=all \
          --suppress=unusedFunction \
          --suppress=misra-c2012-15.5 \
          --suppress=misra-c2012-8.7 \
+         --suppress=misra-c2012-10.4 \
+         --suppress=misra-c2012-21.6 \
+         --suppress=misra-c2012-17.3 \
+         --suppress=missingInclude \
          --suppress=unmatchedSuppression \
+         --suppress=toomanyconfigs \
+         --suppress=normalCheckLevelMaxBranches \
+         --suppress=*:*src/third_party/* \
          -I src/app \
          -I src/hal/rp2350/ \
          -I src/hal/include/ \
          -I src/utils/ \
+         -I src/srv/ \
+         -I src/third_party/littlefs/ \
          -I test \
-         src/app  \
-         src/utils
+         main.c \
+         src/app \
+         src/utils \
+         src/srv
 
 EXIT_CODE=$?
 

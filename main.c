@@ -1,8 +1,12 @@
+#include <inttypes.h>
+#include <stdbool.h>
 #include <stdint.h>
 #include <stdio.h>
 
 #include "app_crash_dump.h"
+#include "app_fs_stress.h"
 #include "app_main.h"
+#include "app_system.h"
 #include "hal_time.h"
 #include "hardware/watchdog.h"
 #include "pico/stdlib.h"
@@ -17,27 +21,34 @@
 #define FAULT_INJECTION_TIME_MS 5000U  // 預期在開機後 1.5 秒注入致命故障
 #define FAULT_INJECTION_LOOP_COUNT (FAULT_INJECTION_TIME_MS / MAIN_LOOP_DELAY_MS)
 
+static void trigger_hardware_reset(void)
+{
+    // 利用 Pico SDK 的 Watchdog 強制觸發重啟
+    (void)watchdog_enable(1, 1);
+    while (1)
+    {
+    }
+}
+
 int main(void)
 {
-    // 1. 初始化所有標準輸出 (包含 USB)
-    stdio_init_all();
+    (void)stdio_init_all();
 
-    // =========================================================
-    // 🌟 終極防禦：卡住開機流程，直到你用電腦連上 USB 為止！
-    // =========================================================
     int wait_count = 0;
-    while (!stdio_usb_connected() && wait_count < 30)
+    while ((stdio_usb_connected() == false) && (wait_count < 30))
     {
-        sleep_ms(100);
+        (void)sleep_ms(100);
         wait_count++;
     }
 
-    // 連線成功後，稍微緩衝 0.5 秒讓終端機準備好
-    sleep_ms(500);
+    if (stdio_usb_connected() == true)
+    {
+        (void)sleep_ms(500);
+        (void)printf("\n\n====================================\n");
+        (void)printf("✅ USB Serial Connected Successfully!\n");
+    }
 
-    (void)printf("\n\n====================================\n");
-    (void)printf("✅ USB Serial Connected Successfully!\n");
-    (void)printf("====================================\n\n");
+    app_fs_stress_execute(hal_time_get_us, trigger_hardware_reset);
 
     // 🌟 2. 死後驗屍機制：檢查並印出上次是否為 Watchdog 當機重啟？
     // crash_dump_check_and_init();
@@ -47,30 +58,30 @@ int main(void)
     // =========================================================
     uint32_t t1_us = hal_time_get_us();
 
-    app_system_init();
+    (void)app_system_init();
 
     uint32_t t2_us = hal_time_get_us();
     uint32_t real_init_time_us = t2_us - t1_us;
 
-    (void)printf("🚀 [PERF] App Initialization Time: %lu us\n", real_init_time_us);
+    (void)printf("🚀 [PERF] App Initialization Time: %" PRIu32 " us\n", real_init_time_us);
 
     // =========================================================
     // 🌟 4. 啟動 Watchdog 防禦
     // =========================================================
-    watchdog_enable(WDT_TIMEOUT_MS, 1);
+    (void)watchdog_enable(WDT_TIMEOUT_MS, 1);
 
     uint32_t loop_counter = 0;
 
     // 5. 進入無窮迴圈 (Super Loop)
     while (1)
     {
-        watchdog_update();
+        (void)watchdog_update();
 
-        app_main_task();
+        (void)app_main_task();
 
         loop_counter++;
-        sleep_ms(MAIN_LOOP_DELAY_MS);
-        (void)printf("🔄 系統正常運行中... (Loop %lu)\n", loop_counter);
+        (void)sleep_ms(MAIN_LOOP_DELAY_MS);
+        (void)printf("🔄 系統正常運行中... (Loop %" PRIu32 ")\n", loop_counter);
 
         if (loop_counter == FAULT_INJECTION_LOOP_COUNT)
         {

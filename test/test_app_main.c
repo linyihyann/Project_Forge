@@ -7,6 +7,7 @@
 #include "mock_app_ssd1306.h"
 #include "mock_hal_dio.h"
 #include "mock_hal_dma.h"
+#include "mock_hal_flash.h"
 #include "mock_hal_i2c.h"
 #include "mock_hal_time.h"
 #include "mock_observer.h"
@@ -37,14 +38,13 @@ void test_app_main_init_Should_InitializeModulesInOrder(void)
     crash_dump_check_and_init_Expect();
 
     hal_dio_init_ExpectAndReturn(HAL_DIO_LED_HEARTBEAT, HAL_DIO_OK);
-    app_fsm_init_Expect();
-    app_fsm_process_event_ExpectAndReturn(FSM_EVENT_INIT_REQ, FSM_OK);
 
-    // 🌟 嚴格規定它必須呼叫 DMA 初始化與啟動
+    app_fsm_init_ExpectAndReturn(NULL, FSM_OK);
+    app_fsm_init_IgnoreArg_cfg();
+
+    app_fsm_process_event_ExpectAndReturn(FSM_EVENT_INIT_REQ, FSM_OK);
     hal_uart_dma_init_ExpectAndReturn(921600, HAL_UART_OK);
     hal_uart_dma_start_rx_ExpectAndReturn(HAL_UART_OK);
-
-    // (註：因為在 setUp 裡已經 Ignore 了 I2C 和 OLED，所以這裡不需要再寫 Expect)
 
     app_main_init();
 }

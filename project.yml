@@ -17,9 +17,15 @@
   :source:
     - src/app/**
     - src/hal/**
-    - src/utils/** # 剛加上的
+    - src/utils/** 
+    - src/srv/** 
+    - src/third_party/littlefs/** 
   :include:
-    - src/hal/include/** # 確保這行還在！這是 Ceedling 找 HAL 介面的依據
+    - src/hal/include/**
+    - src/app
+    - src/utils
+    - src/srv                    
+    - src/third_party/littlefs 
 
 :cmock:
   :mock_prefix: mock_
