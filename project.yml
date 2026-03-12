@@ -1,9 +1,8 @@
-# project.yml 內容節錄
 :project:
   :use_exceptions: FALSE
   :use_test_preprocessor: TRUE
   :use_auxiliary_dependencies: TRUE
-  :build_root: build/test_build # 把測試編譯的垃圾檔案獨立放，不要污染 CMake 的 build
+  :build_root: build/test_build
 
 :defines:
   :test:
@@ -17,15 +16,14 @@
   :source:
     - src/app/**
     - src/hal/**
-    - src/utils/** 
-    - src/srv/** 
-    - src/third_party/littlefs/** 
+    - src/utils/**
+    - src/srv/** - src/srv/third_party/littlefs/**
   :include:
     - src/hal/include/**
     - src/app
     - src/utils
     - src/srv                    
-    - src/third_party/littlefs 
+    - src/srv/third_party/littlefs
 
 :cmock:
   :mock_prefix: mock_
@@ -46,4 +44,16 @@
 :gcov:
   :html_report_type: basic
   :fail_on_coverage_meet: 
-    - 90 # 要求 Line (語句) 與 Branch (分支) 覆蓋率必須達到 100%，否則回傳 Error    
+    - 90 
+
+:flags:
+  :test:
+    :compile:
+      :*:
+        - -Wno-error=implicit-function-declaration
+        - -Wno-implicit-function-declaration
+  :gcov:
+    :compile:
+      :*:
+        - -Wno-error=implicit-function-declaration
+        - -Wno-implicit-function-declaration

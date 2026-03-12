@@ -26,6 +26,5 @@ extern crash_dump_t g_crash_dump;
 void app_crash_dump_init(app_time_provider_fn time_fn);
 
 void crash_dump_check_and_init(void);
-void crash_dump_save_log(const char* msg);
 
 #endif /* APP_CRASH_DUMP_H */

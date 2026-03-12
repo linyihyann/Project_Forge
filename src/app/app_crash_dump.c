@@ -28,7 +28,7 @@ void app_crash_dump_init(app_time_provider_fn time_fn)
 /* =======================================================
  * 核心業務邏輯：將字串安全寫入黑盒子
  * ======================================================= */
-void crash_dump_save_log(const char* log_msg)
+static void crash_dump_save_log(const char* log_msg)
 {
     if (log_msg != NULL)
     {

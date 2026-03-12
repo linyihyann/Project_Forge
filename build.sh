@@ -21,27 +21,33 @@ done
 
 if [ $DO_CLEAN -eq 1 ]; then
     echo "🧹 Cleaning up build artifacts..."
-    sudo rm -rf build build_test
+    # 🌟 1. 拔除 sudo！因為以後檔案都是你的了
+    rm -rf build build_test
     echo "✅ Clean complete."
 fi
 
 if [ "$TARGET" == "test" ]; then
     echo "🛡️ [Docker] Running Full QA Pipeline (Static Analysis + Unit Tests)..."
     
-    # 💡 直接呼叫 CI 專用的 run_cppcheck.sh，確保本地與雲端 100% 一致！
-    docker run --rm -v "$(pwd)":/project -w /project tier1-qa-env bash -c "
+    # 🌟 2. 加上 --user，並移除結尾的 chown
+    docker run --rm -v "$(pwd)":/project -w /project \
+        --user ${USER_ID}:${GROUP_ID} \
+        tier1-qa-env bash -c "
         bash tools/ci/run_cppcheck.sh && \
         echo '🧪 [2/2] Running Unit Tests via Ceedling...' && \
-        ceedling clobber test:all && \
-        chown -R ${USER_ID}:${GROUP_ID} build/test_build
+        ceedling clobber test:all
     "
 else
     echo "🔨 [Docker] Building Firmware for RP2350..."
-    # 👇 這裡維持用原本的 project_forge_env:v2 來編譯硬體
-    docker run --rm -v "$(pwd)":/workspace -w /workspace -e PICO_SDK_PATH=/opt/pico-sdk ${IMAGE_NAME} bash -c "
+    
+    # 🌟 3. 加上 --user，並移除結尾的 chown
+    docker run --rm -v "$(pwd)":/workspace -w /workspace \
+        -e PICO_SDK_PATH=/opt/pico-sdk \
+        -e FREERTOS_KERNEL_PATH=/workspace/src/third_party/FreeRTOS-Kernel \
+        --user ${USER_ID}:${GROUP_ID} \
+        ${IMAGE_NAME} bash -c "
         mkdir -p build && cd build && \
         cmake -G Ninja -DCMAKE_BUILD_TYPE=${BUILD_TYPE} .. && \
-        ninja && \
-        cd .. && chown -R ${USER_ID}:${GROUP_ID} build
+        ninja
     "
 fi

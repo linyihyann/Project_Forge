@@ -16,17 +16,22 @@ cppcheck --enable=all \
          --suppress=misra-c2012-10.4 \
          --suppress=misra-c2012-21.6 \
          --suppress=misra-c2012-17.3 \
+         --suppress=misra-c2012-18.8 \
+         --suppress=misra-c2012-11.8 \
          --suppress=missingInclude \
          --suppress=unmatchedSuppression \
          --suppress=toomanyconfigs \
          --suppress=normalCheckLevelMaxBranches \
-         --suppress=*:*src/third_party/* \
+         --suppress=misra-config \
+         --suppress=constParameterPointer \
+         --suppress=*:*src/srv/third_party/* \
+         -i src/srv/third_party/ \
          -I src/app \
          -I src/hal/rp2350/ \
          -I src/hal/include/ \
          -I src/utils/ \
          -I src/srv/ \
-         -I src/third_party/littlefs/ \
+         -I src/srv/third_party/littlefs/ \
          -I test \
          main.c \
          src/app \

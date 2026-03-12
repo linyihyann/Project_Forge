@@ -3,6 +3,8 @@
 
 #pragma once
 
+#include "ring_buffer.h"
+
 // 系統應用層初始化
 void app_main_init(void);
 
@@ -13,5 +15,7 @@ void app_main_task(void);
 #ifdef TEST
 void app_main_test_hook_reset_tick(void);
 #endif
+
+extern ring_buffer_t g_test_rb;
 
 #endif  // 結束原有的 include guard
