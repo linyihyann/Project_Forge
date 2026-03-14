@@ -44,7 +44,7 @@
 /* ============================================================================== */
 #define configSUPPORT_STATIC_ALLOCATION 1
 #define configSUPPORT_DYNAMIC_ALLOCATION 1
-#define configTOTAL_HEAP_SIZE ((size_t)(128 * 1024))
+#define configTOTAL_HEAP_SIZE ((size_t)(32 * 1024))
 #define configCHECK_FOR_STACK_OVERFLOW 2
 #define configUSE_MALLOC_FAILED_HOOK 1
 
@@ -81,5 +81,15 @@
 #define vPortSVCHandler isr_svcall
 #define xPortPendSVHandler isr_pendsv
 #define xPortSysTickHandler isr_systick
+
+#define configUSE_TRACE_FACILITY 1
+
+#define configGENERATE_RUN_TIME_STATS 1
+
+extern uint32_t hal_time_get_us(void);
+
+#define portCONFIGURE_TIMER_FOR_RUN_TIME_STATS()
+
+#define portGET_RUN_TIME_COUNTER_VALUE() hal_time_get_us()
 
 #endif /* FREERTOS_CONFIG_H */

@@ -34,6 +34,7 @@
     - :callback
     - :ignore_arg
     - :expect_any_args
+    - :return_thru_ptr
 
 :plugins:
   :enabled:

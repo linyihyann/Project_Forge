@@ -158,36 +158,35 @@ static void init_task(void* arg)
     (void)vTaskDelay(pdMS_TO_TICKS(500));
     (void)printf("✅ USB Connected!\r\n");
 
-    (void)printf("[Init] Step 1: app_system_init...\r\n");
     (void)app_system_init();
-    (void)printf("[Init] Step 1: 完成!\r\n");
-
-    (void)printf("[Init] Step 2: Watchdog...\r\n");
     (void)watchdog_enable(WDT_TIMEOUT_MS, 1);
-
-    (void)printf("[Init] Step 3: Core 1...\r\n");
     (void)multicore_launch_core1(core1_hard_rt_loop);
 
-    (void)printf("[Init] Step 4: AppMain 任務...\r\n");
-    (void)srv_os_create_task(app_main_os_task, "AppMain", 2048, NULL, 1);
+    /* 🌟 使用帶有 ID 的新版 srv_os_create_task 建立所有任務 */
+    (void)srv_os_create_task(TASK_ID_APP_MAIN, app_main_os_task, "AppMain", 2048, NULL, 2);
 
-    (void)printf("[Init] 全部完成！\r\n");
+    /* 掛載高頻壓測任務 (RMS 優先權：頻率越高，優先權越大) */
+    (void)srv_os_create_task(TASK_ID_MOTOR_CTRL, app_task_motor_ctrl, "Motor", 256, NULL, 5);
+    (void)srv_os_create_task(TASK_ID_SENSOR_ADC, app_task_sensor_adc, "Sensor", 256, NULL, 4);
+
+    /* 掛載系統監控任務 (優先權最低) */
+    (void)srv_os_create_task(TASK_ID_SYS_MONITOR, app_system_monitor_task, "Monitor", 512, NULL, 1);
+
+    (void)printf("[Init] 任務派發完成，準備切換上下文！\r\n");
     (void)vTaskDelete(NULL);
 }
 
 int main(void)
 {
     stdio_init_all();
-
-    /* ✅ 立刻設定，不等進任務 */
     irq_set_priority(USBCTRL_IRQ, 0x40);
-
     cyw43_arch_init();
 
-    xTaskCreate(led_task, "LED", 512, NULL, 1, NULL);
-    xTaskCreate(init_task, "Init", 2048, NULL, 1, NULL);
+    /* 🌟 main 這裡也必須使用帶有 ID 的新版 API */
+    (void)srv_os_create_task(TASK_ID_LED, led_task, "LED", 256, NULL, 1);
+    (void)srv_os_create_task(TASK_ID_INIT, init_task, "Init", 2048, NULL, 6);
 
-    vTaskStartScheduler();
+    srv_os_start_scheduler();
 
     while (1)
     {

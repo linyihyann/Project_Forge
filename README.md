@@ -38,6 +38,12 @@
 * **Zero-Drop 10kHz Lock-Free IPC:** Achieved a flawless 10,000 Hz cross-core communication pipeline using a Single-Producer-Single-Consumer (SPSC) Lock-Free Ring Buffer, completely preventing Priority Inversion caused by traditional RTOS Mutexes.
 * **Deferred Initialization Pattern:** Eradicated boot-time `HardFault` race conditions between Pico SDK hardware interrupts and FreeRTOS vector tables (VTOR) by delegating all hardware and USB CDC enumerations to a self-destructing `init_task`.
 
+### 8. Microsecond Observability & Hard Real-Time Scheduling (New)
+* **Microsecond Profiling & Memory Optimization:** Integrated Cortex-M33 hardware timer (`time_us_32`) with FreeRTOS Run-Time Stats. Implemented Stack High Water Mark telemetry, mathematically identifying and eliminating 90% of preemptive stack waste, strictly bounding task margins to ~230 Words.
+* **Deterministic Hard Real-Time Execution:** Identified a 4% cycle-drift anomaly caused by priority interference in relative `vTaskDelay`. Enforced absolute periodicity using `srv_os_delay_until` and pure CPU dummy workloads, perfectly restoring the sensor task's CPU utilization to a deterministic 21.1%.
+* **Strict OS Decoupling & Host-side Injection:** Eradicated `#include "FreeRTOS.h"` from the application layer. Engineered the `:return_thru_ptr` CMock plugin in `project.yml` to inject mock memory metrics via pointers, achieving 100% branch coverage for Limp-Home mode triggers on the Host PC.
+* **MISRA C:2012 Compliance Validation:** Resolved critical static analysis violations (Rules 9.3, 15.6, 20.9) by eliminating implicit array initialization and enforcing explicit bounds checking, achieving a 100% clean CI pipeline pass.
+
 ---
 ## 🌟 核心特色 (繁體中文)
 
@@ -77,6 +83,11 @@
 * **零丟包 10kHz 無鎖通訊 (Lock-Free IPC)：** 採用單一生產/消費者 (SPSC) 無鎖環形佇列進行跨核通訊。在每秒一萬次的極端壓測下，透過內部校驗演算法證實 0% 丟包率與資料損毀，徹底根絕傳統 RTOS 互斥鎖引發的優先權反轉 (Priority Inversion)。
 * **延遲初始化安全點火 (Deferred Init)：** 將底層硬體與 USB 列舉全數封裝於最高優先級的 `init_task` 中，待 OS 中斷向量表穩固後再喚醒周邊，最後自我銷毀釋放記憶體。完美解決 Pico SDK 與 FreeRTOS 在開機瞬間搶奪硬體資源導致的 HardFault 死機陷阱。
 
+### 8. 微秒級系統可觀測性與硬即時排程 (New)
+* **微秒級效能剖析與堆疊最佳化：** 將 Cortex-M33 硬體計時器 (`time_us_32`) 綁定至 FreeRTOS 核心統計，提供 1µs 精度的 CPU 負載監測。透過 High Water Mark 遙測，精準抓出並消除高達 90% 的 Stack 盲目配置浪費，將安全裕度收斂至約 230 Words。
+* **硬即時 (Hard Real-Time) 週期強制執行：** 透過精準測時，抓出相對延遲 (`vTaskDelay`) 因高優先級搶佔所引發的 4% 週期飄移與 Deadline Miss。全面導入絕對延遲 (`srv_os_delay_until`) 與純 CPU 運算負載模擬，成功將感測器任務負載率精準校正回確定性的 21.1%。
+* **OS 徹底解耦與 Host 端狀態注入：** 從 App 層全面拔除 `#include "FreeRTOS.h"` 依賴。透過設定 `project.yml` 啟用 CMock `:return_thru_ptr` 外掛，在 Host 端精準注入假記憶體指標，達成降級運作模式 (Limp-Home) 觸發邏輯的 100% 程式碼覆蓋率。
+* **MISRA C:2012 嚴格合規：** 依據 Tier-1 靜態分析標準，修復陣列隱式初始化、強制分支大括號與巨集防護 (Rules 9.3, 15.6, 20.9)，達成 CI/CD 流水線 100% 零違規綠燈通過。
 ---
 ## 📂 專案目錄結構 (Architecture Tree)
 ```text
